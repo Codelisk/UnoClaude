@@ -96,7 +96,7 @@ public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
         _logger = logger;
     }
     
-    public Task Handle(ProductUpdatedEvent @event, CancellationToken ct)
+    public Task Handle(ProductUpdatedEvent @event, IMediatorContext context, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"Product {event.ProductId} updated by {event.UpdatedBy}");
         // Update UI, cache, etc.
@@ -189,7 +189,7 @@ public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
         _logger = logger;
     }
     
-    public Task Handle(ProductUpdatedEvent @event, CancellationToken ct)
+    public Task Handle(ProductUpdatedEvent @event, IMediatorContext context, CancellationToken cancellationToken)
     {
         // Implementation
     }
