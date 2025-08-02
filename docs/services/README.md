@@ -3,7 +3,7 @@
 ## Service Layer Structure
 
 ### Base Service Pattern
-All services should encapsulate business logic:
+All services should encapsulate business logic and use the Service attribute for registration:
 
 ```csharp
 public interface IProductService
@@ -13,6 +13,7 @@ public interface IProductService
     Task<Product> CreateProductAsync(Product product, CancellationToken ct);
 }
 
+[Service(ServiceLifetime.Singleton)]
 public class ProductService : IProductService
 {
     private readonly IMediator _mediator;
@@ -114,7 +115,7 @@ await _mediator.Publish(new ProductUpdatedEvent
 ## Dependency Injection with Shiny
 
 ### Service Registration
-Register services and handlers with Shiny Mediator:
+Services are automatically registered using the Service attribute:
 
 ```csharp
 // Service registration in MauiProgram
@@ -131,9 +132,8 @@ public class MauiProgram
             cfg.AddHandlersFromAssemblyOf<GetProductsHandler>();
         });
         
-        // Register Services
-        builder.Services.AddSingleton<IProductService, ProductService>();
-        builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+        // Services are auto-registered via [Service] attribute
+        builder.Services.AddServicesFromAssemblyOf<ProductService>();
         
         // Register background jobs if needed
         builder.Services.AddJob<SyncProductsJob>();
@@ -141,6 +141,21 @@ public class MauiProgram
         return builder.Build();
     }
 }
+```
+
+### Service Attribute Options
+```csharp
+// Singleton service (default)
+[Service]
+public class CacheService : ICacheService { }
+
+// Scoped service
+[Service(ServiceLifetime.Scoped)]
+public class UserService : IUserService { }
+
+// Transient service
+[Service(ServiceLifetime.Transient)]
+public class EmailService : IEmailService { }
 ```
 
 ### Handler Registration with Attributes
