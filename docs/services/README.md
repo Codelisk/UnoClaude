@@ -290,6 +290,227 @@ public class SyncProductsJob : IJob
 }
 ```
 
+## Middleware Support
+
+Shiny Mediator provides powerful middleware capabilities for cross-cutting concerns in Uno Platform applications.
+
+### Default Middleware
+When using Uno Platform extension, the following middleware is pre-installed:
+- **User Notification Errors** - Displays user-friendly error messages
+- **Offline Support** - Handles offline scenarios gracefully
+- **Replay Stream** - Replays failed requests when back online
+- **Persistent Caching** - File-based caching that survives app restarts
+
+### Setup
+```csharp
+// In App.xaml.cs
+public partial class App : Application
+{
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        var builder = this.CreateBuilder(args)
+            .Configure(host => host
+                .UseShiny()
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddShinyMediator(cfg => 
+                    {
+                        // Adds default Uno middleware
+                        cfg.UseUno();
+                        
+                        // Add additional middleware as needed
+                        cfg.UsePerformanceLogging();
+                        cfg.AddDataAnnotations();
+                    });
+                }));
+    }
+}
+```
+
+### Validation Middleware
+Add validation to your commands and requests using Data Annotations:
+
+```csharp
+// Contract with validation
+[Validate]
+public record CreateProductCommand : ICommand
+{
+    [Required]
+    public string Name { get; init; }
+    
+    [Range(0.01, 999999.99)]
+    public decimal Price { get; init; }
+    
+    [Required]
+    public int CategoryId { get; init; }
+}
+
+// Handle validation errors
+try
+{
+    await _mediator.Send(new CreateProductCommand { Name = "", Price = -1 });
+}
+catch (ValidateException ex)
+{
+    // ex.Result.Errors contains validation errors by property name
+    foreach (var error in ex.Result.Errors)
+    {
+        Console.WriteLine($"{error.Key}: {string.Join(", ", error.Value)}");
+    }
+}
+```
+
+### Caching Middleware
+Implement caching for expensive queries:
+
+```csharp
+// Using attribute
+[SingletonHandler]
+[Cache(AbsoluteExpirationSeconds = 300, SlidingExpirationSeconds = 60)]
+public class GetProductsHandler : IRequestHandler<GetProductsRequest, ImmutableList<Product>>
+{
+    public async Task<ImmutableList<Product>> Handle(
+        GetProductsRequest request, 
+        IMediatorContext context, 
+        CancellationToken cancellationToken)
+    {
+        // This result will be cached
+        return await _repository.GetProductsAsync(cancellationToken);
+    }
+}
+
+// Force cache refresh from caller
+var products = await _mediator.Request(
+    new GetProductsRequest(), 
+    cancellationToken,
+    ctx => ctx.ForceCacheRefresh()
+);
+
+// Check if data came from cache
+var response = await _mediator.Request(new GetProductsRequest());
+var cacheInfo = response.Context.Cache();
+if (cacheInfo?.IsHit == true)
+{
+    Console.WriteLine($"Data from cache, stored at: {cacheInfo.Timestamp}");
+}
+```
+
+### Performance Logging
+Monitor slow operations:
+
+```csharp
+// In appsettings.json
+{
+    "Mediator": {
+        "PerformanceLogging": {
+            "MyApp.Handlers.*": {
+                "ErrorThresholdMilliseconds": 1000
+            }
+        }
+    }
+}
+
+// Will log error if handler takes > 1 second
+[SingletonHandler]
+public class SlowOperationHandler : IRequestHandler<SlowRequest, Result>
+{
+    public async Task<Result> Handle(
+        SlowRequest request,
+        IMediatorContext context,
+        CancellationToken cancellationToken)
+    {
+        // If this takes > 1 second, an error will be logged
+        await Task.Delay(2000, cancellationToken);
+        return new Result();
+    }
+}
+```
+
+### Main Thread Middleware
+Ensure UI updates happen on the main thread:
+
+```csharp
+[SingletonHandler]
+public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
+{
+    private readonly IProductListViewModel _viewModel;
+    
+    [MainThread]
+    public async Task Handle(
+        ProductUpdatedEvent @event,
+        IMediatorContext context,
+        CancellationToken cancellationToken)
+    {
+        // Safe to update UI here - guaranteed to be on main thread
+        _viewModel.RefreshProduct(@event.ProductId);
+    }
+}
+```
+
+### Configuration
+Configure middleware via appsettings.json:
+
+```json
+{
+    "Mediator": {
+        "Cache": {
+            "MyApp.Handlers.GetProductsHandler": {
+                "Priority": "High",
+                "AbsoluteExpirationSeconds": 300,
+                "SlidingExpirationSeconds": 60
+            }
+        },
+        "PerformanceLogging": {
+            "*": {
+                "ErrorThresholdMilliseconds": 5000
+            }
+        },
+        "Resilience": {
+            "MyApp.Handlers.ApiCallHandler": {
+                "TimeoutMilliseconds": 5000,
+                "Retry": {
+                    "MaxAttempts": 3,
+                    "DelayMilliseconds": 1000,
+                    "BackoffType": "Exponential"
+                }
+            }
+        }
+    }
+}
+```
+
+### Custom Middleware
+Create your own middleware by implementing the pipeline:
+
+```csharp
+public class LoggingMiddleware<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+{
+    private readonly ILogger<LoggingMiddleware<TRequest, TResponse>> _logger;
+    
+    public async Task<TResponse> Handle(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        IMediatorContext context,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"Handling {typeof(TRequest).Name}");
+        
+        try
+        {
+            var response = await next();
+            _logger.LogInformation($"Handled {typeof(TRequest).Name} successfully");
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error handling {typeof(TRequest).Name}");
+            throw;
+        }
+    }
+}
+```
+
 ## Best Practices
 
 1. **Single Responsibility**: Each handler handles one request type
