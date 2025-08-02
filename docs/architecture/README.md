@@ -50,20 +50,56 @@ await _navigator.NavigateViewModelAsync<MainViewModel>(this);
 ```
 
 ### Folder Structure
+Each page has its own subfolder containing all related components:
+
 ```
 src/
 ├── Pages/
-│   ├── MainPage.xaml
-│   └── MainPage.xaml.cs
-├── Regions/
-│   ├── Header/
-│   │   ├── HeaderRegion.xaml
-│   │   └── HeaderRegion.xaml.cs
-│   └── Content/
-│       ├── ContentRegion.xaml
-│       └── ContentRegion.xaml.cs
-└── ViewModels/
-    ├── MainViewModel.cs
-    ├── HeaderViewModel.cs
-    └── ContentViewModel.cs
+│   ├── Main/
+│   │   ├── MainPage.xaml
+│   │   ├── MainPage.xaml.cs
+│   │   ├── Regions/
+│   │   │   ├── Header/
+│   │   │   │   ├── MainHeaderRegion.xaml
+│   │   │   │   └── MainHeaderRegion.xaml.cs
+│   │   │   └── Content/
+│   │   │       ├── MainContentRegion.xaml
+│   │   │       └── MainContentRegion.xaml.cs
+│   │   └── ViewModels/
+│   │       ├── MainViewModel.cs
+│   │       ├── MainHeaderViewModel.cs
+│   │       └── MainContentViewModel.cs
+│   ├── Products/
+│   │   ├── ProductsPage.xaml
+│   │   ├── ProductsPage.xaml.cs
+│   │   ├── Regions/
+│   │   │   ├── List/
+│   │   │   │   ├── ProductListRegion.xaml
+│   │   │   │   └── ProductListRegion.xaml.cs
+│   │   │   └── Details/
+│   │   │       ├── ProductDetailsRegion.xaml
+│   │   │       └── ProductDetailsRegion.xaml.cs
+│   │   └── ViewModels/
+│   │       ├── ProductsViewModel.cs
+│   │       ├── ProductListViewModel.cs
+│   │       └── ProductDetailsViewModel.cs
+│   └── Settings/
+│       ├── SettingsPage.xaml
+│       ├── SettingsPage.xaml.cs
+│       ├── Regions/
+│       │   └── General/
+│       │       ├── GeneralSettingsRegion.xaml
+│       │       └── GeneralSettingsRegion.xaml.cs
+│       └── ViewModels/
+│           ├── SettingsViewModel.cs
+│           └── GeneralSettingsViewModel.cs
+└── Models/
+    ├── Product.cs
+    ├── User.cs
+    └── Settings.cs
 ```
+
+### Naming Convention
+- Page folders: Named after the page (e.g., `Main`, `Products`, `Settings`)
+- Region names: Prefixed with page name (e.g., `MainHeaderRegion`, `ProductListRegion`)
+- ViewModels: Prefixed with page name (e.g., `MainViewModel`, `ProductListViewModel`)

@@ -22,8 +22,18 @@ UnoClaude/
 │   └── services/
 └── src/
     ├── Pages/
-    ├── Regions/
-    ├── ViewModels/
+    │   ├── Main/
+    │   │   ├── MainPage.xaml
+    │   │   ├── Regions/
+    │   │   └── ViewModels/
+    │   ├── Products/
+    │   │   ├── ProductsPage.xaml
+    │   │   ├── Regions/
+    │   │   └── ViewModels/
+    │   └── Settings/
+    │       ├── SettingsPage.xaml
+    │       ├── Regions/
+    │       └── ViewModels/
     ├── Models/
     └── Services/
 ```
