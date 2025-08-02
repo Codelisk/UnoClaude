@@ -12,7 +12,11 @@ The hosting architecture is built around the `IHost` interface from Microsoft.Ex
 - Environment-specific configurations
 
 ## Application Entry Point
-The hosting initialization begins in `App.cs`:
+The hosting initialization is split between two files:
+- `App.xaml.cs` - Contains the minimal startup code
+- `App.xaml.host.cs` - Contains all configuration logic
+
+The main entry point in `App.xaml.cs`:
 
 ```csharp
 public partial class App : Application
@@ -37,15 +41,22 @@ var builder = this.CreateBuilder(args)
 This extension method creates an `IApplicationBuilder` from the `Application` instance.
 
 ### 2. Host Configuration
-The builder is configured using a fluent API:
+The builder delegates configuration to `App.xaml.host.cs`:
 ```csharp
-.Configure(host =>
+.Configure(host => ConfigureHost(host))
+```
+
+The `ConfigureHost` method in `App.xaml.host.cs` uses a fluent API:
+```csharp
+private static void ConfigureHost(IHostBuilder host)
+{
     host.AddEnvironment()
         .AddLogging()
         .AddConfig()
         .AddLocalization()
         .ConfigureServices((context, services) => { })
-)
+        .UseNavigation(RegisterRoutes);
+}
 ```
 
 ### 3. Window Management

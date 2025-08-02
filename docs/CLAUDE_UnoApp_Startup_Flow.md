@@ -44,7 +44,15 @@ var builder = this.CreateBuilder(args)
 
 ### 5. Host Configuration
 ```csharp
-.Configure(host =>
+.Configure(host => ConfigureHost(host))
+```
+
+The `ConfigureHost` method is defined in `App.xaml.host.cs`:
+
+```csharp
+// In App.xaml.host.cs
+private static void ConfigureHost(IHostBuilder host)
+{
     host.AddEnvironment()
         .AddLogging()
         .AddConfig()
@@ -53,8 +61,8 @@ var builder = this.CreateBuilder(args)
         {
             services.AddCommonServices(context.Configuration);
         })
-        .UseNavigation(RegisterRoutes)
-)
+        .UseNavigation(RegisterRoutes);
+}
 ```
 
 #### Configuration Steps:
@@ -104,7 +112,7 @@ services.AddSingleton<IHttpRequestDecorator, BearerAuthenticationHttpDecorator>(
 ```
 
 ## Route Registration
-The `RegisterRoutes` method defines the application's navigation structure:
+The `RegisterRoutes` method is defined in `App.xaml.host.cs` and configures the application's navigation structure:
 
 ```csharp
 private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes)
