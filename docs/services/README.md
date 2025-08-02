@@ -51,7 +51,7 @@ public record GetProductsResponse
 }
 
 // Handler
-[RegisterHandler]
+[SingletonHandler]
 public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
 {
     private readonly IApiClient _apiClient;
@@ -86,7 +86,7 @@ public record ProductUpdatedEvent : IEvent
 }
 
 // Event Handler
-[RegisterHandler]
+[SingletonHandler]
 public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
 {
     private readonly ILogger<ProductUpdatedEventHandler> _logger;
@@ -153,13 +153,13 @@ public class ProductService : IProductService
 }
 
 // Handlers with auto-registration
-[RegisterHandler]
+[SingletonHandler]
 public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
 {
     // ... implementation
 }
 
-[RegisterHandler]
+[SingletonHandler]
 public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
 {
     // ... implementation
