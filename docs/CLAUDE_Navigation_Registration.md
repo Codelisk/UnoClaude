@@ -309,21 +309,6 @@ new(
 )
 ```
 
-### 3. Wizard Flow
-```csharp
-new(
-    "Setup",
-    View: views.FindByViewModel<SetupWizardViewModel>(),
-    Nested:
-    [
-        new("Step1", View: views.FindByViewModel<Step1ViewModel>()),
-        new("Step2", View: views.FindByViewModel<Step2ViewModel>()),
-        new("Step3", View: views.FindByViewModel<Step3ViewModel>()),
-        new("Complete", View: views.FindByViewModel<CompleteViewModel>())
-    ]
-)
-```
-
 ## Troubleshooting
 
 ### Common Issues
