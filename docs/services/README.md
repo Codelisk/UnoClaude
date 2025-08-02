@@ -191,27 +191,30 @@ public class ProductViewModel
 Services are automatically registered using the Service attribute:
 
 ```csharp
-// Service registration in MauiProgram
-public class MauiProgram
+// Service registration in App.xaml.cs
+public partial class App : Application
 {
-    public static MauiApp CreateMauiApp()
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        var builder = MauiApp.CreateBuilder();
-        
-        builder.UseShiny();
-        
-        builder.Services.AddShinyMediator(cfg => 
-        {
-            cfg.AddHandlersFromAssemblyOf<GetProductsHandler>();
-        });
-        
-        // Services are auto-registered via [Service] attribute
-        builder.Services.AddServicesFromAssemblyOf<ProductService>();
-        
-        // Register background jobs if needed
-        builder.Services.AddJob<SyncProductsJob>();
-        
-        return builder.Build();
+        var builder = this.CreateBuilder(args)
+            .Configure(host => host
+                .UseShiny()
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddShinyMediator(cfg => 
+                    {
+                        cfg.AddHandlersFromAssemblyOf<GetProductsHandler>();
+                    });
+                    
+                    // Services are auto-registered via [Service] attribute
+                    services.AddServicesFromAssemblyOf<ProductService>();
+                    
+                    // Register background jobs if needed
+                    services.AddJob<SyncProductsJob>();
+                }));
+                
+        // Build and activate window
+        var window = builder.Build().RootFrame;
     }
 }
 ```
