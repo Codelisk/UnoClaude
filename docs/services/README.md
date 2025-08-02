@@ -13,7 +13,6 @@ public interface IProductService
     Task<Product> CreateProductAsync(Product product, CancellationToken ct);
 }
 
-[RegisterIn(ServiceScope.Singleton)]
 public class ProductService : IProductService
 {
     private readonly IMediator _mediator;
@@ -133,62 +132,13 @@ public interface IApiClient
 }
 ```
 
-## Dependency Injection with Shiny Extensions
+## Dependency Injection with Shiny
 
-### Service Registration using Shiny
-Use Shiny's attribute-based registration for cleaner code:
-
-```csharp
-// Mark services with Shiny attributes
-[RegisterIn(ServiceScope.Singleton)]
-public class ProductService : IProductService
-{
-    private readonly IMediator _mediator;
-    
-    public ProductService(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-    // ... implementation
-}
-
-// Handlers with auto-registration
-[SingletonHandler]
-public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
-{
-    // ... implementation
-}
-
-[SingletonHandler]
-public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
-{
-    // ... implementation
-}
-```
-
-### Module Registration
-Use Shiny modules for organizing service registration:
+### Service Registration
+Register services and handlers with Shiny Mediator:
 
 ```csharp
-public class ServicesModule : ShinyModule
-{
-    public override void Register(IServiceCollection services)
-    {
-        // Register Shiny Mediator
-        services.AddShinyMediator(cfg => cfg.UseDefaultHandlers());
-        
-        // Auto-register all services marked with attributes
-        services.RegisterServicesFromAssemblyOf<ServicesModule>();
-        
-        // Register API Clients
-        services.AddRefitClient<IApiClient>()
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.example.com"));
-        
-        // Register background jobs if needed
-        services.AddJob<SyncProductsJob>();
-    }
-}
-
+// Service registration in MauiProgram
 public class MauiProgram
 {
     public static MauiApp CreateMauiApp()
@@ -196,18 +146,67 @@ public class MauiProgram
         var builder = MauiApp.CreateBuilder();
         
         builder.UseShiny();
-        builder.Services.AddShinyModule<ServicesModule>();
         
-        // Other configuration...
+        builder.Services.AddShinyMediator(cfg => 
+        {
+            cfg.AddHandlersFromAssemblyOf<GetProductsHandler>();
+        });
+        
+        // Register Services
+        builder.Services.AddSingleton<IProductService, ProductService>();
+        
+        // Register API Clients
+        builder.Services.AddRefitClient<IApiClient>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.example.com"));
+        
+        // Register background jobs if needed
+        builder.Services.AddJob<SyncProductsJob>();
         
         return builder.Build();
     }
 }
 ```
 
+### Handler Registration with Attributes
+Use Shiny attributes for handler registration:
+
+```csharp
+// Handlers with Shiny attributes
+[SingletonHandler]
+public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
+{
+    private readonly IApiClient _apiClient;
+    
+    public GetProductsHandler(IApiClient apiClient)
+    {
+        _apiClient = apiClient;
+    }
+    
+    public async Task<GetProductsResponse> Handle(GetProductsRequest request, CancellationToken ct)
+    {
+        // Implementation
+    }
+}
+
+[SingletonHandler]
+public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
+{
+    private readonly ILogger<ProductUpdatedEventHandler> _logger;
+    
+    public ProductUpdatedEventHandler(ILogger<ProductUpdatedEventHandler> logger)
+    {
+        _logger = logger;
+    }
+    
+    public Task Handle(ProductUpdatedEvent @event, CancellationToken ct)
+    {
+        // Implementation
+    }
+}
+```
+
 ### Background Jobs with Shiny
 ```csharp
-[RegisterIn(ServiceScope.Singleton)]
 public class SyncProductsJob : IJob
 {
     private readonly IMediator _mediator;
