@@ -201,13 +201,19 @@ public partial class App : Application
                 .UseShiny()
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddShinyMediator(cfg => 
-                    {
-                        cfg.AddHandlersFromAssemblyOf<GetProductsHandler>();
-                    });
+                    services.AddShinyMediator(cfg => cfg.UseUno());
                     
-                    // Services are auto-registered via [Service] attribute
-                    services.AddServicesFromAssemblyOf<ProductService>();
+                    // Register handlers individually
+                    services.AddSingletonAsImplementedInterfaces<GetProductsHandler>();
+                    services.AddSingletonAsImplementedInterfaces<CreateProductCommandHandler>();
+                    services.AddSingletonAsImplementedInterfaces<ProductCreatedEventHandler>();
+                    
+                    // OR use source generation with [SingletonHandler] attribute
+                    // services.AddDiscoveredMediatorHandlersFromUnoClaude();
+                    
+                    // Register services
+                    services.AddSingleton<IProductService, ProductService>();
+                    services.AddSingleton<IProductRepository, ProductRepository>();
                     
                     // Register background jobs if needed
                     services.AddJob<SyncProductsJob>();
