@@ -1,0 +1,122 @@
+---
+title: Requests
+---
+import { Steps } from '@astrojs/starlight/components';
+
+Requests are really the center of all the action in the Mediator.  Request can only be fulfilled/responded to by a single handler.  Requests also have
+the ability to respond with a result as well.
+
+:::warning
+When issuing a request, we start a fresh Service Provider scope.  This means that any dependencies that are registered as `Scoped` will be disposed of after the request is completed.  If you need to maintain a dependency, you should register it as `Singleton`
+:::
+
+## Creating Requests
+
+A request can be a class, record, or struct.  It must implement the `IRequest` interface.  If you want to return a result, then you must implement `IRequest<TResult>`
+
+```csharp
+public record ResponseRequest : Shiny.Mediator.IRequest<Response>;
+public record Response(string Anything);
+```
+
+The request handlers are also very similar
+
+```csharp
+
+public class ResponseRequestHandler : IRequestHandler<ResponseRequest, Response>
+{
+    public async Task<Response> Handle(ResponseRequest request, RequestContext<ResponseRequest> context, CancellationToken ct)
+    {
+        var response = await GetResponseThing(ct);
+        return response;
+    }
+}
+
+```
+Now, let's register these guys through your host builder/DI container.  They can technically work off any lifecycle you choose.
+
+```csharp
+services.AddSingleton<IRequestHandler<ResponseRequest, Response>, ResponseRequestHandler>();
+
+// OR USING OUR EASY EXTENSION METHOD
+services.AddSingletonAsImplementedInterfaces<ResponseRequestHandler>();
+```
+
+Finally, let's send a request through the mediator
+
+```csharp
+IMediator mediator; // get from your DI container or inject into your DI aware component
+
+var result = await mediator.Request(new ResponseRequest());
+```
+
+:::warning
+If you use IMediator.Request and TResult implements IEvent, mediator will publish that event for you before returning to the request caller
+:::
+
+## Middleware
+
+In our opinion, this is where Shiny Mediator really begins to shine.  Layering overtop of your requests with middleware is beautiful.  We offer some excellent `out of the box` middleware.  Be sure to check out it [here](/client/mediator/middleware/)
+
+Middleware allows you to mutate the requests, response, or even short circuit the request.  It's a great place to do things like logging, error handling, caching, etc.
+
+Let's take a look at an sample piece of request middleware that handles a specific use-case
+
+```csharp
+
+public class MyRequestMiddleware : IRequestMiddleware<ResponseRequest, Response>
+{
+    public async Task<Response> Process(
+        IMediatorContext context,
+        RequestHandlerDelegate<Response> next,
+        CancellationToken cancellationToken
+    )
+    {
+        // do something before the request is handled
+        var response = await next();
+        // do something after the request is handled
+        return response;
+    }
+}
+```
+
+Now, let's register this middleware with your host builder
+
+```csharp
+services.AddSingleton<IRequestMiddleware<ResponseRequest, Response>, MyRequestMiddleware>();
+```
+
+Let's take a look a general purpose middleware that handles any request
+
+```csharp
+public class MyGeneralMiddleware<TRequest, TResult>: IRequestMiddleware<TResult, TResult>
+{
+    public async Task<TResult> Process(
+        IMediatorContext context,
+        RequestHandlerDelegate<TResult> next,
+        CancellationToken cancellationToken
+    )
+    {
+        // do something before the request is handled
+        var result = await next();
+        // do something after the request is handled
+
+        return result;
+    }
+}
+```
+
+Make sure to register this middleware with your host builder using an open generic
+
+```csharp
+ServiceCollection services;
+
+services.AddSingleton(typeof(IRequestMiddleware<,>), typeof(MyGeneralMiddleware<,>));
+
+// OR
+
+services.AddMediator(x => 
+{
+    x.AddOpenRequestMiddleware(typeof(MyGeneralMiddleware<,>));
+});
+```

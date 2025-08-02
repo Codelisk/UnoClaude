@@ -1,0 +1,108 @@
+---
+title: Offline Availability
+---
+import { Steps } from '@astrojs/starlight/components';
+import NugetBadge from '/src/components/NugetBadge.tsx';
+
+:::note
+Offline middleware is applied only to [Requests](/mediator/requests)
+:::
+
+* Have you ever found a case where you have a cache, but it just doesn't care about the user's current network status?  
+* Have you ever wanted to ensure data is available for your app the next time it launches, but the user is disconnected?
+
+When you are building a mobile app, you need to consider offline availability.  This is especially true for apps that
+are used in the field or in areas where network connectivity is spotty.  
+
+:::note
+Offline availability is installed by default with the UseMaui setup.
+
+The offline availability middleware is used as part of the default middleware installed by Shiny.Mediator.Maui OR Shiny.Mediator.Blazor.  Like most
+other middleware, you simply need to mark your IRequestHandler.Handle method(s) with the attribute `[Offline]` or using the Configuration system.
+
+Obviously, offline only works for request handlers with a return value.
+
+Fine grained control over offline data is available via [Request Keys](/mediator/requestkeys)
+:::
+
+:::warning
+Offline should not be considered a "cache".  If online connectivity is detected, the offline middleware will keep making calls to your handler.  Consider using the (Caching Middleware)[./caching] if you are
+looking for a performance based cache setup
+:::
+
+## Request Handler Example
+
+```csharp
+public class MyRequestHandler : IRequestHandler<MyRequest, IReadOnlyList<MyThingData>>
+{
+    [OfflineAvailable]
+    public async Task<IReadOnlyList<MyThingData>> Handle(MyRequest request, IMediatorContext context, CancellationToken cancellationToken)
+    {
+        // each return will overwrite the previous return value
+    }
+}
+```
+
+:::note
+Above is configured with the `OfflineAvailableAttribute`.  You can also configure the Microsoft Extensions Configuration using the following:
+
+```json
+{
+    "Mediator": {
+        "Offline": {
+            "MyNamespace.SomeHttpRequest": true
+        }
+    }
+}
+```
+
+For more info about configuration, see [Middleware Configuration](./)
+:::
+
+:::danger
+Configuration does allow you to specify wildcard/globs `*` to specify all handlers in a namespace use Offline. 
+WE STRONGLY DISCOURAGE THIS.  This feature is something you want to be very explicit about.
+:::
+
+## Controlling HOW the offline data is stored
+
+Often, there are times you want to store data based on the parameter arguments within your request.  Trying to build these keys for you
+can be a bit tricky, so we have a simple interface to help you out instead.
+
+The offline middleware looks at your IRequest implementation.  You can also implement the `IRequestKey` interface which is part
+of the Shiny.Mediator.Contracts library.  This allows you to 'build' a key from possible arguments in your request object.
+
+Example
+```csharp
+public record MyRequest(string Arg1, int Arg2) : IRequest<IReadOnlyList<MyThingData>>, IRequestKey
+{
+    public string GetKey() => $"{this.Arg1}-{this.Arg2}";
+}
+```
+
+## Contexts & 'Did my data come from offline storage'?
+
+There is often times that you want to know IF your data came from an offline store, but also WHEN it was stored.  This is easy to accomplish using
+the `IMediatorContext` interface.  This interface is populated with tons of extra data during your mediator calls including offline data.
+
+There is an extension method called `IMediatorContext.Offline` - if this value is returned as null, the data is "fresh", otherwise, it contains info about
+when the data was stored.
+
+```csharp
+IMediator mediator;
+var response = mediator.Request(new MyRequest());
+
+response.Result // the actual data
+var offline = response.Context.Offline();
+
+if (offline == null) 
+{
+    // ... data is direct from source
+}
+else 
+{
+    // data is from offline store
+    offline.Timestamp // when the data was stored
+    offline.RequestKey // the key used to store the data
+}
+```

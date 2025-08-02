@@ -1,0 +1,34 @@
+---
+title: Uno Platform
+---
+import { Steps } from '@astrojs/starlight/components';
+import NugetBadge from '/src/components/NugetBadge.tsx';
+
+The **Uno Platform** is an [Open-source platform](https://github.com/unoplatform/uno) for building single codebase native mobile, web, desktop, and embedded apps quickly.
+
+With **Uno Platform + Mediator**, you can now take advantage of all our offline, persistent cache, and other app-building
+middleware.
+
+Visit their [website](https://platform.uno/) and [documentation](https://aka.platform.uno/uno-docs-intro) for more details.
+
+:::note
+We currently do not support event collector for Uno Platform. This is planned for a future release.
+:::
+
+## Setup
+1. Install <NugetBadge name="Shiny.Mediator.Uno" showLabel={true} /> to your project.
+2. In your `App.xaml.cs` file, add the following:
+    ```csharp
+    builder.Services.AddShinyMediator(cfg => cfg.UseUno());
+    ```
+3. Start making calls to the mediator as you normally would.
+
+## Middleware Support
+
+The Mediator Uno Platform extension comes with a lot of preinstalled default middleware (that you can opt out of).  If you choose to opt-out of this middleware being installed,
+simply pass false to the first argument in `UseUno`.
+
+* [User Notification Errors](/mediator/exceptionhandlers)
+* [Offline](/mediator/middleware/offline)
+* [Replay Stream](/mediator/middleware/replay)
+* [Persistent Caching](/mediator/middleware/caching)
