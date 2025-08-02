@@ -34,25 +34,19 @@ public class ProductService : IProductService
 ## Shiny Mediator Pattern
 
 ### Request/Response Pattern
-Define requests and handlers for API operations:
+Define requests and handlers for queries that return data:
 
 ```csharp
 // Request
-public record GetProductsRequest : IRequest<GetProductsResponse>
+public record GetProductsRequest : IRequest<ImmutableList<Product>>
 {
     public int? CategoryId { get; init; }
     public string? SearchTerm { get; init; }
 }
 
-// Response
-public record GetProductsResponse
-{
-    public ImmutableList<Product> Products { get; init; } = ImmutableList<Product>.Empty;
-}
-
 // Handler
 [SingletonHandler]
-public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
+public class GetProductsHandler : IRequestHandler<GetProductsRequest, ImmutableList<Product>>
 {
     private readonly IProductRepository _productRepository;
     
@@ -61,55 +55,134 @@ public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProduct
         _productRepository = productRepository;
     }
     
-    public async Task<GetProductsResponse> Handle(GetProductsRequest request, CancellationToken ct)
+    public async Task<ImmutableList<Product>> Handle(GetProductsRequest request, IMediatorContext context, CancellationToken cancellationToken)
     {
         var products = await _productRepository.GetProductsAsync(
             request.CategoryId, 
             request.SearchTerm, 
-            ct
+            cancellationToken
         );
         
-        return new GetProductsResponse { Products = products.ToImmutableList() };
+        return products.ToImmutableList();
     }
 }
 ```
 
-### Message Bus Pattern
-Use mediator for app-wide messaging:
+### Command Pattern
+Define commands for operations that modify state:
+
+```csharp
+// Command
+public record CreateProductCommand : ICommand
+{
+    public string Name { get; init; }
+    public decimal Price { get; init; }
+    public int CategoryId { get; init; }
+}
+
+// Handler
+[SingletonHandler]
+public class CreateProductCommandHandler : ICommandHandler<CreateProductCommand>
+{
+    private readonly IProductRepository _productRepository;
+    private readonly IMediator _mediator;
+    
+    public CreateProductCommandHandler(IProductRepository productRepository, IMediator mediator)
+    {
+        _productRepository = productRepository;
+        _mediator = mediator;
+    }
+    
+    public async Task Handle(CreateProductCommand command, IMediatorContext context, CancellationToken cancellationToken)
+    {
+        var product = new Product
+        {
+            Name = command.Name,
+            Price = command.Price,
+            CategoryId = command.CategoryId
+        };
+        
+        await _productRepository.CreateAsync(product, cancellationToken);
+        
+        // Publish event
+        await _mediator.Publish(new ProductCreatedEvent { ProductId = product.Id });
+    }
+}
+```
+
+### Event Pattern
+Use events for notifications and decoupled messaging:
 
 ```csharp
 // Event
-public record ProductUpdatedEvent : IEvent
+public record ProductCreatedEvent : IEvent
 {
     public int ProductId { get; init; }
-    public string UpdatedBy { get; init; }
 }
 
 // Event Handler
 [SingletonHandler]
-public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
+public class ProductCreatedEventHandler : IEventHandler<ProductCreatedEvent>
 {
-    private readonly ILogger<ProductUpdatedEventHandler> _logger;
+    private readonly ILogger<ProductCreatedEventHandler> _logger;
+    private readonly ICacheService _cacheService;
     
-    public ProductUpdatedEventHandler(ILogger<ProductUpdatedEventHandler> logger)
+    public ProductCreatedEventHandler(ILogger<ProductCreatedEventHandler> logger, ICacheService cacheService)
     {
         _logger = logger;
+        _cacheService = cacheService;
     }
     
-    public Task Handle(ProductUpdatedEvent @event, IMediatorContext context, CancellationToken cancellationToken)
+    public async Task Handle(ProductCreatedEvent @event, IMediatorContext context, CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"Product {event.ProductId} updated by {event.UpdatedBy}");
-        // Update UI, cache, etc.
-        return Task.CompletedTask;
+        _logger.LogInformation($"Product {event.ProductId} was created");
+        
+        // Invalidate cache
+        await _cacheService.InvalidateAsync("products", cancellationToken);
+        
+        // Update UI, send notifications, etc.
     }
 }
 
 // Publishing events
-await _mediator.Publish(new ProductUpdatedEvent 
-{ 
-    ProductId = productId,
-    UpdatedBy = currentUser 
-});
+await _mediator.Publish(new ProductCreatedEvent { ProductId = productId });
+```
+
+### Usage Examples
+```csharp
+// In a ViewModel or Service
+public class ProductViewModel
+{
+    private readonly IMediator _mediator;
+    
+    public ProductViewModel(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+    
+    // Query data
+    public async Task<ImmutableList<Product>> LoadProductsAsync()
+    {
+        return await _mediator.Request(new GetProductsRequest { CategoryId = 1 });
+    }
+    
+    // Execute command
+    public async Task CreateProductAsync(string name, decimal price)
+    {
+        await _mediator.Send(new CreateProductCommand 
+        { 
+            Name = name, 
+            Price = price, 
+            CategoryId = 1 
+        });
+    }
+    
+    // Publish event
+    public async Task NotifyProductViewedAsync(int productId)
+    {
+        await _mediator.Publish(new ProductViewedEvent { ProductId = productId });
+    }
+}
 ```
 
 ## Dependency Injection with Shiny
@@ -164,7 +237,7 @@ Use Shiny attributes for handler registration:
 ```csharp
 // Handlers with Shiny attributes
 [SingletonHandler]
-public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
+public class GetProductsHandler : IRequestHandler<GetProductsRequest, ImmutableList<Product>>
 {
     private readonly IProductRepository _productRepository;
     
@@ -173,25 +246,28 @@ public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProduct
         _productRepository = productRepository;
     }
     
-    public async Task<GetProductsResponse> Handle(GetProductsRequest request, CancellationToken ct)
+    public async Task<ImmutableList<Product>> Handle(GetProductsRequest request, IMediatorContext context, CancellationToken cancellationToken)
     {
         // Implementation
+        var products = await _productRepository.GetProductsAsync(request.CategoryId, request.SearchTerm, cancellationToken);
+        return products.ToImmutableList();
     }
 }
 
 [SingletonHandler]
-public class ProductUpdatedEventHandler : IEventHandler<ProductUpdatedEvent>
+public class ProductViewedEventHandler : IEventHandler<ProductViewedEvent>
 {
-    private readonly ILogger<ProductUpdatedEventHandler> _logger;
+    private readonly ILogger<ProductViewedEventHandler> _logger;
     
-    public ProductUpdatedEventHandler(ILogger<ProductUpdatedEventHandler> logger)
+    public ProductViewedEventHandler(ILogger<ProductViewedEventHandler> logger)
     {
         _logger = logger;
     }
     
-    public Task Handle(ProductUpdatedEvent @event, IMediatorContext context, CancellationToken cancellationToken)
+    public Task Handle(ProductViewedEvent @event, IMediatorContext context, CancellationToken cancellationToken)
     {
-        // Implementation
+        _logger.LogInformation($"Product {event.ProductId} was viewed");
+        return Task.CompletedTask;
     }
 }
 ```
