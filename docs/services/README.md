@@ -53,16 +53,16 @@ public record GetProductsResponse
 [SingletonHandler]
 public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
 {
-    private readonly IApiClient _apiClient;
+    private readonly IProductRepository _productRepository;
     
-    public GetProductsHandler(IApiClient apiClient)
+    public GetProductsHandler(IProductRepository productRepository)
     {
-        _apiClient = apiClient;
+        _productRepository = productRepository;
     }
     
     public async Task<GetProductsResponse> Handle(GetProductsRequest request, CancellationToken ct)
     {
-        var products = await _apiClient.GetProductsAsync(
+        var products = await _productRepository.GetProductsAsync(
             request.CategoryId, 
             request.SearchTerm, 
             ct
@@ -111,27 +111,6 @@ await _mediator.Publish(new ProductUpdatedEvent
 });
 ```
 
-### API Client Integration
-Configure API clients with Refit or HttpClient:
-
-```csharp
-public interface IApiClient
-{
-    [Get("/api/products")]
-    Task<List<Product>> GetProductsAsync(
-        [Query] int? categoryId,
-        [Query] string? search,
-        CancellationToken ct
-    );
-    
-    [Post("/api/products")]
-    Task<Product> CreateProductAsync(
-        [Body] Product product,
-        CancellationToken ct
-    );
-}
-```
-
 ## Dependency Injection with Shiny
 
 ### Service Registration
@@ -154,10 +133,7 @@ public class MauiProgram
         
         // Register Services
         builder.Services.AddSingleton<IProductService, ProductService>();
-        
-        // Register API Clients
-        builder.Services.AddRefitClient<IApiClient>()
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.example.com"));
+        builder.Services.AddSingleton<IProductRepository, ProductRepository>();
         
         // Register background jobs if needed
         builder.Services.AddJob<SyncProductsJob>();
@@ -175,11 +151,11 @@ Use Shiny attributes for handler registration:
 [SingletonHandler]
 public class GetProductsHandler : IRequestHandler<GetProductsRequest, GetProductsResponse>
 {
-    private readonly IApiClient _apiClient;
+    private readonly IProductRepository _productRepository;
     
-    public GetProductsHandler(IApiClient apiClient)
+    public GetProductsHandler(IProductRepository productRepository)
     {
-        _apiClient = apiClient;
+        _productRepository = productRepository;
     }
     
     public async Task<GetProductsResponse> Handle(GetProductsRequest request, CancellationToken ct)
