@@ -20,11 +20,6 @@ Services are registered through extension methods on `IHostBuilder`:
 
 ```csharp
 host.AddEnvironment()
-    .AddLogging()
-    .AddConfig()
-    .AddLocalization()
-    .AddSerialization()
-    .AddHttp()
     .ConfigureServices((context, services) =>
     {
         services.AddServices(context.Configuration);
