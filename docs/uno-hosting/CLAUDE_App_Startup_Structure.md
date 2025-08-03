@@ -45,7 +45,7 @@ All host builder logic resides in the partial class file `App.xaml.host.cs`:
 
 ## Navigation Pattern
 
-@CLAUDE_Service_Registration
+@CLAUDE_Navigation_Registration
 
 ## Best Practices
 
