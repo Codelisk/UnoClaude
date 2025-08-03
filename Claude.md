@@ -9,6 +9,11 @@ This file provides guidance for Claude Code when working with the UnoClaude proj
 - [XAML Styling Guidelines](./docs/styling/README.md) - Consistent styling approach
 - [Services Architecture](./docs/services/README.md) - Service layer and Mediator pattern implementation
 
+### Uno Platform Specific Docs
+- [App Startup Structure](./docs/claude/CLAUDE_App_Startup_Structure.md) - Uno app initialization and hosting
+- [Navigation Registration](./docs/claude/CLAUDE_Navigation_Registration.md) - Route and view registration patterns
+- [Service Registration Pattern](./docs/claude/CLAUDE_Service_Registration_Pattern.md) - DI and service configuration
+
 ## Quick Reference
 
 ### Project Structure
