@@ -56,6 +56,15 @@ UnoClaude/
     │       ├── Regions/
     │       └── ViewModels/
     ├── Models/
+    └── Mediator/
+    │   ├── Requests/
+	│	│	├── IRequests/
+    │   │	├── Events/
+    │   │   └──Commands/
+    │   └── Handlers/
+    │       ├── IRequests/
+    │       ├── Events/
+    │       └── Commands/
     └── Services/
 ```
 
