@@ -1,0 +1,79 @@
+{
+  "handler": {
+    "name": "Entity Changes Handler",
+    "version": "1.0.0",
+    "description": "Handles entity creation, modification, and deletion based on ticket requirements",
+    "trigger": "entitiesChanged == true",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Analyze Existing Entities",
+        "actions": [
+          "Review all entities in src/Models directory",
+          "Identify entities affected by the ticket",
+          "Determine entity relationships"
+        ],
+        "search_patterns": [
+          "src/Models/**/*.cs",
+          "src/**/Entities/**/*.cs"
+        ]
+      },
+      {
+        "step": 2,
+        "name": "Determine Entity Changes",
+        "actions": [
+          "List entities to be modified with specific changes",
+          "List new entities to be created",
+          "List entities to be deleted",
+          "Identify folder structure for new entities"
+        ],
+        "decision_criteria": {
+          "modification": "Entity exists but needs new properties or behavior",
+          "creation": "New business concept requires new entity",
+          "deletion": "Entity no longer needed in business logic"
+        }
+      },
+      {
+        "step": 3,
+        "name": "Implement Entity Changes",
+        "actions": [
+          "Create or modify entity files",
+          "Follow entity schema from codesamples/entity.md",
+          "Ensure proper namespace and folder structure",
+          "Add necessary attributes and annotations"
+        ],
+        "code_template_reference": "../../codesamples/entity.md",
+        "requirements": [
+          "All entities must inherit from appropriate base class",
+          "Include proper data annotations",
+          "Add XML documentation comments",
+          "Implement INotifyPropertyChanged if needed"
+        ]
+      },
+      {
+        "step": 4,
+        "name": "Update Related Components",
+        "actions": [
+          "Update DTOs if necessary",
+          "Modify mapping configurations",
+          "Update database context if applicable",
+          "Adjust serialization settings if needed"
+        ]
+      }
+    ],
+    "output": {
+      "log_file": "Ticketprotokoll/entities-changes.log",
+      "summary": {
+        "created": "array of created entity names",
+        "modified": "array of modified entity names",
+        "deleted": "array of deleted entity names",
+        "affected_files": "array of file paths"
+      }
+    },
+    "validation": {
+      "compile_check": true,
+      "naming_convention": "PascalCase",
+      "required_attributes": ["proper namespace", "XML documentation"]
+    }
+  }
+}

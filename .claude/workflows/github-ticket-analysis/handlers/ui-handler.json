@@ -1,0 +1,139 @@
+{
+  "handler": {
+    "name": "UI Design Handler",
+    "version": "1.0.0",
+    "description": "Creates and modifies UI pages, regions, and navigation structure",
+    "trigger": "uiChanges == true",
+    "glossary_imports": [
+      "../glossar/ui/page.md",
+      "../glossar/ui/region.md",
+      "../glossar/ui/navigationsstruktur.md",
+      "../glossar/ui/style.md"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "name": "Analyze UI Requirements",
+        "actions": [
+          "Create navigation structure for the ticket",
+          "Determine number of pages needed",
+          "Identify regions per page",
+          "Define naming convention for pages and regions",
+          "Determine folder structure"
+        ],
+        "structure_template": {
+          "pages": [
+            {
+              "name": "PageName",
+              "folder": "src/Pages/[Feature]/",
+              "regions": [
+                {
+                  "name": "RegionName",
+                  "type": "Content/List/Detail"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "step": 2,
+        "name": "Create Page Structure",
+        "actions": [
+          "Create page XAML files",
+          "Inherit from BasePage",
+          "Add region declarations",
+          "Configure navigation"
+        ],
+        "page_template": {
+          "inheritance": "BasePage",
+          "xaml_structure": "Page > Grid > ContentControl with Region.Attached",
+          "code_behind": "Minimal, logic in ViewModel"
+        },
+        "region_declaration": "<ContentControl uen:Region.Attached=\"True\" uen:Region.Name=\"RegionName\"/>"
+      },
+      {
+        "step": 3,
+        "name": "Design Region Views",
+        "foreach": "page in pages",
+        "nested_foreach": "region in page.Regions",
+        "actions": [
+          "Identify required UI components from Uno Platform or uno.toolkit.ui",
+          "Check existing styles or create new ones",
+          "Create view content",
+          "Ensure every element has an explicit style"
+        ],
+        "requirements": [
+          "No element without explicit style",
+          "Use existing UnoClaude styles when possible",
+          "Follow Material Design guidelines",
+          "Ensure responsive layout"
+        ]
+      },
+      {
+        "step": 4,
+        "name": "Create or Update Styles",
+        "actions": [
+          "Review existing styles in App.xaml",
+          "Create new styles for custom components",
+          "Ensure style consistency",
+          "Add resource dictionary if needed"
+        ],
+        "style_requirements": [
+          "Every XAML control must have explicit style",
+          "Include Grid, ContentControl, and basic elements",
+          "Follow existing naming convention",
+          "Use BasedOn for style inheritance"
+        ],
+        "style_location": "src/Styles/"
+      },
+      {
+        "step": 5,
+        "name": "Configure Navigation",
+        "actions": [
+          "Register pages in navigation",
+          "Set up route definitions",
+          "Configure region navigation",
+          "Add to navigation menu if needed"
+        ],
+        "navigation_pattern": {
+          "registration": "services.AddNavigation()",
+          "route_definition": "RouteMap.Register()",
+          "region_navigation": "RegionManager.RequestNavigate()"
+        }
+      }
+    ],
+    "validation_checklist": [
+      {
+        "item": "All pages inherit from BasePage",
+        "required": true
+      },
+      {
+        "item": "All regions properly declared",
+        "required": true
+      },
+      {
+        "item": "Every XAML element has explicit style",
+        "required": true
+      },
+      {
+        "item": "Navigation routes configured",
+        "required": true
+      },
+      {
+        "item": "Responsive layout implemented",
+        "required": true
+      }
+    ],
+    "output": {
+      "log_file": "Ticketprotokoll/ui-changes.log",
+      "summary": {
+        "created_pages": "array of page names with paths",
+        "created_regions": "array of region definitions",
+        "created_styles": "array of new style names",
+        "navigation_structure": "object describing navigation hierarchy",
+        "affected_files": "array of file paths"
+      }
+    }
+  }
+}

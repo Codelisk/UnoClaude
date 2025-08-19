@@ -1,0 +1,85 @@
+{
+  "template": {
+    "name": "Initial GitHub Ticket Analysis",
+    "version": "1.0.0",
+    "prompt": "Analyze the provided GitHub ticket and determine the following aspects for the UnoClaude project implementation. Examine the ticket requirements carefully and provide a detailed analysis.",
+    "sections": [
+      {
+        "id": "entities",
+        "question": "Müssen für das Ticket Entities verändert oder hinzugefügt werden?",
+        "analysis_points": [
+          "Check if new data models are required",
+          "Identify entities that need modification",
+          "Determine if entities need to be deleted",
+          "Consider relationships between entities"
+        ],
+        "output_field": "entitiesChanged",
+        "details_field": "entityDetails"
+      },
+      {
+        "id": "api",
+        "question": "Braucht man für das Ticket neue Api Endpunkte?",
+        "analysis_points": [
+          "Identify required HTTP methods (GET, POST, PUT, DELETE)",
+          "Determine API routes and URI templates",
+          "Check authorization requirements",
+          "Define request/response models"
+        ],
+        "output_field": "newApiEndpoints",
+        "details_field": "apiDetails"
+      },
+      {
+        "id": "ui",
+        "question": "Braucht man UI Anpassungen für das Ticket?",
+        "analysis_points": [
+          "Identify new pages required",
+          "Determine regions within pages",
+          "Check for navigation structure changes",
+          "Consider UI component requirements"
+        ],
+        "output_field": "uiChanges",
+        "details_field": "uiDetails"
+      },
+      {
+        "id": "uilogic",
+        "question": "Braucht man UI-Logik Anpassungen für das Ticket?",
+        "analysis_points": [
+          "Identify ViewModels needed",
+          "Determine Commands required",
+          "Check for reactive properties (IFeed)",
+          "Consider Mediator pattern usage"
+        ],
+        "output_field": "uiLogicChanges",
+        "details_field": "uiLogicDetails"
+      },
+      {
+        "id": "libraries",
+        "question": "Gibt es im Ticket Teile für die man neue Nuget Packete/Third Libraries benötigt?",
+        "analysis_points": [
+          "Identify functionality requiring external libraries",
+          "Check compatibility with Uno Platform",
+          "Consider alternative existing solutions",
+          "Document library purposes"
+        ],
+        "output_field": "newLibraries",
+        "details_field": "libraryDetails"
+      }
+    ],
+    "output_format": {
+      "ticketId": "string",
+      "ticketTitle": "string",
+      "analysisDate": "datetime",
+      "summary": "string",
+      "entitiesChanged": "boolean",
+      "entityDetails": "object",
+      "newApiEndpoints": "boolean",
+      "apiDetails": "object",
+      "uiChanges": "boolean",
+      "uiDetails": "object",
+      "uiLogicChanges": "boolean",
+      "uiLogicDetails": "object",
+      "newLibraries": "boolean",
+      "libraryDetails": "array"
+    }
+  }
+}

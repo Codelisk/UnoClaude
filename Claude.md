@@ -76,6 +76,30 @@ UnoClaude/
 
 For detailed information, refer to the specific documentation files linked above.
 
+## Automated Workflows
+
+### GitHub Ticket Analysis Workflow
+When analyzing GitHub tickets for implementation, use the structured workflow system:
+
+- **Workflow Location**: `.claude/workflows/github-ticket-analysis/`
+- **Main Documentation**: [Workflow Guide](./.claude/workflows/github-ticket-analysis/workflow.md)
+- **Configuration**: Structured JSON-based workflow with handlers for each component
+
+#### How to Use:
+1. When presented with a GitHub ticket, mention: "Please execute the GitHub Ticket Analysis Workflow"
+2. The workflow will automatically:
+   - Analyze the ticket requirements
+   - Create a structured analysis (`Ticketprotokoll/grobanalyse.json`)
+   - Execute appropriate handlers based on requirements
+   - Generate code following UnoClaude patterns
+
+#### Workflow Components:
+- **Initial Analysis**: Determines what needs to be implemented
+- **Entity Handler**: Creates/modifies data models
+- **API Handler**: Implements endpoints using Shiny Mediator
+- **UI Handler**: Creates pages, regions, and styles
+- **UI Logic Handler**: Implements ViewModels and reactive patterns
+
 ## Extended Documentation Reference
 
 When you need specific platform or library details not covered in the primary docs:

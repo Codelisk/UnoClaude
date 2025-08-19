@@ -1,0 +1,180 @@
+{
+  "handler": {
+    "name": "UI Logic Handler",
+    "version": "1.0.0",
+    "description": "Implements ViewModels, Commands, and reactive properties for UI",
+    "trigger": "uiLogicChanges == true",
+    "code_sample_imports": [
+      "../../codesamples/ui/vms/viewmodel.md",
+      "../../codesamples/ui/vms/command.md",
+      "../../codesamples/ui/vms/property.md"
+    ],
+    "important_docs": [
+      "../../docs/mediator/index.md"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "name": "Create ViewModels Structure",
+        "actions": [
+          "Add ViewModel for each new Page",
+          "Add ViewModel for each new View",
+          "Define region configurations",
+          "Set up navigation parameters"
+        ],
+        "viewmodel_requirements": [
+          "Inherit from appropriate base ViewModel",
+          "Implement INavigationAware if needed",
+          "Use constructor dependency injection",
+          "Initialize services via DI"
+        ]
+      },
+      {
+        "step": 2,
+        "name": "Configure Regions",
+        "actions": [
+          "Override GetRegions method",
+          "Define region models",
+          "Set navigation data",
+          "Configure region views"
+        ],
+        "region_template": {
+          "method": "public override IEnumerable<RegionModel> GetRegions(NavigationEventArgs e)",
+          "implementation": "return [new RegionModel(\"RegionName\", RegionViewsNames.View, data: navigationData)];"
+        }
+      },
+      {
+        "step": 3,
+        "name": "Implement Data Loading",
+        "actions": [
+          "Override InitializeAsync for startup data",
+          "Implement data fetching logic",
+          "Set up error handling",
+          "Configure loading states"
+        ],
+        "initialization_pattern": {
+          "method": "public virtual Task InitializeAsync(TNavigationEventArgs e)",
+          "considerations": [
+            "Load data asynchronously",
+            "Handle errors gracefully",
+            "Show loading indicators",
+            "Cache data if appropriate"
+          ]
+        }
+      },
+      {
+        "step": 4,
+        "name": "Setup Reactive Properties",
+        "actions": [
+          "Identify FeedView requirements",
+          "Implement IFeed<T> for collections",
+          "Create IState<T> for single values",
+          "Configure refresh logic"
+        ],
+        "reactive_patterns": {
+          "feed": "IFeed<IImmutableList<T>> for collections",
+          "state": "IState<T> for single values",
+          "refresh": "IState<bool> for refresh triggers"
+        },
+        "uno_extensions_reactive": {
+          "required": true,
+          "namespace": "Uno.Extensions.Reactive"
+        }
+      },
+      {
+        "step": 5,
+        "name": "Implement Commands",
+        "actions": [
+          "Create command properties",
+          "Implement command execution logic",
+          "Add CanExecute conditions",
+          "Configure command parameters"
+        ],
+        "command_patterns": {
+          "relay_command": "ICommand = new RelayCommand(Execute, CanExecute)",
+          "async_command": "IAsyncCommand = new AsyncRelayCommand(ExecuteAsync)",
+          "parameter_command": "ICommand<T> = new RelayCommand<T>(Execute)"
+        }
+      },
+      {
+        "step": 6,
+        "name": "Configure Property Notifications",
+        "actions": [
+          "Identify properties needing change notification",
+          "Implement INotifyPropertyChanged",
+          "Use PropertyChanged.Fody if available",
+          "Add validation if needed"
+        ],
+        "notification_patterns": {
+          "manual": "OnPropertyChanged(nameof(PropertyName))",
+          "fody": "[Reactive] attribute",
+          "observable": "ObservableProperty<T>"
+        }
+      },
+      {
+        "step": 7,
+        "name": "Integrate Shiny Mediator",
+        "actions": [
+          "Create mediator requests for business logic",
+          "Implement command handlers",
+          "Set up event handlers",
+          "Configure mediator in ViewModels"
+        ],
+        "mediator_usage": {
+          "requirement": "MUST use Shiny Mediator for all business logic",
+          "patterns": [
+            "Commands -> Mediator Requests",
+            "Events -> Mediator Events",
+            "Queries -> Mediator Queries"
+          ]
+        }
+      },
+      {
+        "step": 8,
+        "name": "Wire Up Data Binding",
+        "actions": [
+          "Configure x:Bind or Binding in XAML",
+          "Set DataContext properly",
+          "Ensure two-way binding where needed",
+          "Test property updates"
+        ]
+      }
+    ],
+    "validation_checklist": [
+      {
+        "item": "All ViewModels created for Pages and Views",
+        "required": true
+      },
+      {
+        "item": "Regions properly configured",
+        "required": true
+      },
+      {
+        "item": "IFeed used for collections in FeedView",
+        "required": true
+      },
+      {
+        "item": "Commands implemented for user actions",
+        "required": true
+      },
+      {
+        "item": "Shiny Mediator used for business logic",
+        "required": true
+      },
+      {
+        "item": "Property notifications working",
+        "required": true
+      }
+    ],
+    "output": {
+      "log_file": "Ticketprotokoll/uilogic-changes.log",
+      "summary": {
+        "created_viewmodels": "array of ViewModel class names",
+        "implemented_commands": "array of command names and purposes",
+        "reactive_properties": "array of IFeed/IState properties",
+        "mediator_requests": "array of created mediator requests",
+        "affected_files": "array of file paths"
+      }
+    }
+  }
+}

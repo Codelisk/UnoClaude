@@ -1,0 +1,102 @@
+{
+  "handler": {
+    "name": "API Endpoints Handler",
+    "version": "1.0.0",
+    "description": "Creates and modifies API endpoints using Shiny Mediator pattern",
+    "trigger": "newApiEndpoints == true",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Analyze API Requirements",
+        "actions": [
+          "Review ticket for API endpoint requirements",
+          "Identify HTTP methods needed",
+          "Determine route patterns",
+          "Check authorization requirements"
+        ],
+        "analysis_template": {
+          "http_method": ["GET", "POST", "PUT", "DELETE"],
+          "route_pattern": "/api/[controller]/[action]",
+          "authorization": ["RequiresAuthorization: true/false"],
+          "operation_id": "Unique identifier for the operation",
+          "uri_template": "Template for the URI",
+          "return_type": "Response model type",
+          "request_model": "Request parameter model"
+        }
+      },
+      {
+        "step": 2,
+        "name": "Create Mediator Requests",
+        "actions": [
+          "Create request interface in Mediator/Requests/IRequests",
+          "Create request implementation in Mediator/Requests",
+          "Define request and response models",
+          "Add validation attributes"
+        ],
+        "location": {
+          "interfaces": "src/Mediator/Requests/IRequests/",
+          "implementations": "src/Mediator/Requests/",
+          "models": "src/Models/Requests/"
+        }
+      },
+      {
+        "step": 3,
+        "name": "Implement Handlers",
+        "actions": [
+          "Create handler in Mediator/Handlers",
+          "Implement business logic",
+          "Add error handling",
+          "Include logging"
+        ],
+        "code_template_reference": "../../codesamples/mediator/aspnethandler.md",
+        "handler_requirements": [
+          "Inherit from appropriate base handler",
+          "Implement IRequestHandler interface",
+          "Include constructor dependency injection",
+          "Add comprehensive error handling",
+          "Implement async/await pattern"
+        ]
+      },
+      {
+        "step": 4,
+        "name": "Configure Endpoint Registration",
+        "actions": [
+          "Register endpoint in Program.cs or Startup",
+          "Configure routing",
+          "Set up authorization policies if needed",
+          "Add Swagger documentation"
+        ],
+        "registration_pattern": {
+          "minimal_api": "app.MapPost('/api/endpoint', handler).RequireAuthorization()",
+          "controller": "[HttpPost('/api/endpoint')]",
+          "mediator": "services.AddSingleton<IRequestHandler<TRequest, TResponse>, THandler>()"
+        }
+      },
+      {
+        "step": 5,
+        "name": "Create API Documentation",
+        "actions": [
+          "Add XML documentation comments",
+          "Include OpenAPI attributes",
+          "Document request/response examples",
+          "Add error response documentation"
+        ]
+      }
+    ],
+    "output": {
+      "log_file": "Ticketprotokoll/api-changes.log",
+      "summary": {
+        "created_endpoints": "array of new endpoint definitions",
+        "modified_endpoints": "array of modified endpoints",
+        "handlers_created": "array of handler class names",
+        "affected_files": "array of file paths"
+      }
+    },
+    "validation": {
+      "compile_check": true,
+      "route_convention": "RESTful",
+      "response_format": "JSON",
+      "error_handling": "standardized error responses"
+    }
+  }
+}

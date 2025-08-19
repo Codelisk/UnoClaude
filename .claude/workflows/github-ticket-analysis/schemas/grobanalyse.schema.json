@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitHub Ticket Grobanalyse Schema",
+  "description": "Schema for the initial analysis output of GitHub tickets",
+  "type": "object",
+  "required": [
+    "ticketId",
+    "ticketTitle",
+    "analysisDate",
+    "entitiesChanged",
+    "newApiEndpoints",
+    "uiChanges",
+    "uiLogicChanges",
+    "newLibraries"
+  ],
+  "properties": {
+    "ticketId": {
+      "type": "string",
+      "description": "GitHub ticket identifier (e.g., #123)",
+      "pattern": "^#?[0-9]+$"
+    },
+    "ticketTitle": {
+      "type": "string",
+      "description": "Title or summary of the GitHub ticket",
+      "minLength": 1
+    },
+    "analysisDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the analysis was performed"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary of the ticket requirements"
+    },
+    "entitiesChanged": {
+      "type": "boolean",
+      "description": "Whether entities need to be changed, added, or removed"
+    },
+    "entityDetails": {
+      "type": "object",
+      "description": "Detailed information about entity changes",
+      "properties": {
+        "toCreate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "folder": { "type": "string" },
+              "properties": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "toModify": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "changes": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "toDelete": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "newApiEndpoints": {
+      "type": "boolean",
+      "description": "Whether new API endpoints are required"
+    },
+    "apiDetails": {
+      "type": "object",
+      "description": "Detailed information about API changes",
+      "properties": {
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["method", "route", "operationId"],
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+              },
+              "route": { "type": "string" },
+              "operationId": { "type": "string" },
+              "requiresAuth": { "type": "boolean" },
+              "uriTemplate": { "type": "string" },
+              "requestModel": { "type": "string" },
+              "responseModel": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "uiChanges": {
+      "type": "boolean",
+      "description": "Whether UI changes are required"
+    },
+    "uiDetails": {
+      "type": "object",
+      "description": "Detailed information about UI changes",
+      "properties": {
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "folder": { "type": "string" },
+              "regions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "type": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "navigationChanges": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "componentsNeeded": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "uiLogicChanges": {
+      "type": "boolean",
+      "description": "Whether UI logic changes are required"
+    },
+    "uiLogicDetails": {
+      "type": "object",
+      "description": "Detailed information about UI logic changes",
+      "properties": {
+        "viewModels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "forPage": { "type": "string" },
+              "commands": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "properties": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "usesIFeed": { "type": "boolean" },
+              "usesMediatorPattern": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "newLibraries": {
+      "type": "boolean",
+      "description": "Whether new NuGet packages or third-party libraries are required"
+    },
+    "libraryDetails": {
+      "type": "array",
+      "description": "List of required libraries",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "purpose": { "type": "string" },
+          "nugetPackage": { "type": "string" }
+        },
+        "required": ["name", "purpose"]
+      }
+    },
+    "additionalNotes": {
+      "type": "string",
+      "description": "Any additional notes or considerations for implementation"
+    }
+  }
+}

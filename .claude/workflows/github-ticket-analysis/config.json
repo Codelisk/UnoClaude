@@ -1,0 +1,69 @@
+{
+  "workflow": {
+    "name": "GitHub Ticket Analysis Workflow",
+    "version": "1.0.0",
+    "description": "Automated workflow for analyzing GitHub tickets and generating UnoClaude project code",
+    "author": "UnoClaude Team",
+    "steps": [
+      {
+        "id": "initial-analysis",
+        "name": "Initial Ticket Analysis",
+        "description": "Analyze the GitHub ticket to determine required changes",
+        "template": "templates/initial-analysis.json",
+        "output": {
+          "file": "Ticketprotokoll/grobanalyse.json",
+          "schema": "schemas/grobanalyse.schema.json"
+        },
+        "questions": [
+          "Müssen für das Ticket Entities verändert oder hinzugefügt werden?",
+          "Braucht man für das Ticket neue Api Endpunkte?",
+          "Braucht man UI Anpassungen für das Ticket?",
+          "Braucht man UI-Logik Anpassungen für das Ticket?",
+          "Gibt es im Ticket Teile für die man neue Nuget Packete/Third Libraries benötigt?"
+        ]
+      },
+      {
+        "id": "conditional-execution",
+        "name": "Conditional Workflow Execution",
+        "description": "Execute specific workflows based on analysis results",
+        "conditions": [
+          {
+            "field": "entitiesChanged",
+            "value": true,
+            "action": "execute",
+            "handler": "handlers/entities-handler.json"
+          },
+          {
+            "field": "newApiEndpoints",
+            "value": true,
+            "action": "execute",
+            "handler": "handlers/api-handler.json"
+          },
+          {
+            "field": "uiChanges",
+            "value": true,
+            "action": "execute",
+            "handler": "handlers/ui-handler.json"
+          },
+          {
+            "field": "uiLogicChanges",
+            "value": true,
+            "action": "execute",
+            "handler": "handlers/uilogic-handler.json"
+          },
+          {
+            "field": "newLibraries",
+            "value": true,
+            "action": "create",
+            "output": "Ticketprotokoll/thirdparty.txt"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "autoCreateDirectories": true,
+      "validateSchemas": true,
+      "logLevel": "info"
+    }
+  }
+}
