@@ -1,0 +1,114 @@
+---
+title: Commands
+---
+
+
+Commands are much like [Requests](/mediator/requests) but without the result.  Commands allow you to do things that Requests simply
+can't do like deferred or scheduled execution.  You can still wait to make sure your command has been stored/executed/etc.
+
+:::warning
+When issuing a command, we start a fresh Service Provider scope.  This means that any dependencies that are registered as `Scoped` will be disposed of after the request is completed.  If you need to maintain a dependency, you should register it as `Singleton`
+:::
+
+## Creating Commands
+A request can be a class, record, or struct.  It must implement the `IRequest` interface.  If you want to return a result, then you must implement `IRequest<TResult>`
+
+```csharp
+public record MyCommand(string RandomArg) : Shiny.Mediator.ICommand;
+```
+
+Now let's create our handler
+
+```csharp
+
+public class MyCommandHandler : ICommandHandler<MyCommand>
+{
+    public async Task Handle(MyCommand command, MediatorContext context, CancellationToken ct)
+    {
+        // do something with the command
+    }
+}
+
+```
+Now, let's register these guys through your host builder/DI container.  They can technically work off any lifecycle you choose.
+
+```csharp
+services.AddSingleton<ICommandHandler<MyCommand>, MyCommand>();
+
+// OR USING OUR EASY EXTENSION METHOD
+services.AddSingletonAsImplementedInterfaces<ResponseRequestHandler>();
+
+```
+
+Finally, let's send a request through the mediator
+
+```csharp
+IMediator mediator; // get from your DI container or inject into your DI aware component
+
+var context = await mediator.Send(new MyCommand());
+// note that you get back a context to receive back any metadata that may have been processed through by middleware or the handler
+```
+
+## Middleware
+
+In our opinion, this is where Shiny Mediator really begins to shine.  Layering overtop of your requests with middleware is beautiful.  We offer some excellent `out of the box` middleware.  Be sure to check out it [here](/client/mediator/middleware/)
+
+Middleware allows you to mutate the command or even [schedule it](./middleware/scheduling) for later execution.  It's a great place to do things like logging, error handling, caching, etc.
+
+Let's take a look at an sample piece of request middleware that handles a specific use-case
+
+```csharp
+
+public class MyCommandMiddleware : ICommandMiddleware<MyCommand>
+{
+    public async Task Process(
+        IMediatorContext context,
+        CommandHandlerDelegate next,
+        CancellationToken cancellationToken
+    )
+    {
+        // do something before the request is handled
+        await next();
+        // do something after the request is handled
+    }
+}
+```
+
+Now, let's register this middleware with your host builder
+
+```csharp
+services.AddSingleton<ICommandMiddleware<MyCommand>, MyCommandMiddleware>();
+```
+
+Let's take a look a general purpose middleware that handles any command
+
+```csharp
+public class MyCommandMiddleware<TCommand>: ICommandMiddleware<TCommand> where TCommand : ICommand
+{
+    public async Task Process(
+        IMediatorContext context,
+        CommandHandlerDelegate next,
+        CancellationToken cancellationToken
+    )
+    {
+        // do something before the request is handled
+        await next();
+        // do something after the request is handled
+    }
+}
+```
+
+Make sure to register this middleware with your host builder using an open generic
+
+```csharp
+ServiceCollection services;
+
+services.AddSingleton(typeof(ICommandMiddleware<>), typeof(MyCommandMiddleware<>));
+
+// OR
+
+services.AddMediator(x => 
+{
+    x.AddOpenCommandMiddleware(typeof(MyGeneralMiddleware<>));
+});
+```

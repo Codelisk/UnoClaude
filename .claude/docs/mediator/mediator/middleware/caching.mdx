@@ -1,0 +1,212 @@
+---
+title: Caching
+---
+import { Steps } from '@astrojs/starlight/components';
+import NugetBadge from '/src/components/NugetBadge.tsx';
+
+:::note
+Caching middleware is applied only to [Requests](/mediator/requests)
+:::
+
+<NugetBadge name="Shiny.Mediator.Caching.MicrosoftMemoryCache" showLabel={true} />
+
+Our caching provider is built on top of [Microsoft.Extensions.Caching.Memory](https://learn.microsoft.com/en-us/dotnet/core/extensions/caching)
+Caching is insanely easy with request handlers in Shiny Mediator.
+
+:::note
+Caching uses [Request Keys](/mediator/requestkeys) to determine the key of a request cached item 
+:::
+
+<Steps>
+1. Install Shiny.Mediator.Caching.MicrosoftMemoryCache <NugetBadge name="Shiny.Mediator.Caching.MicrosoftMemoryCache" showLabel={true} /> to your project.
+
+2. Create your request handler - you can mark Cache here with the attribute or you can use [Configuration](./).
+
+   ```csharp
+   [Cache(AbsoluteExpirationSeconds = 60, SlidingExpirationSeconds = 30)]
+   public class MyHandler : IRequestHandler<MyRequest, MyResult>
+   {
+       public async Task<MyResult> Handle(MyRequest request, RequestContext<MyRequest> context, CancellationToken ct)
+       {
+           return new MyResult();
+       }
+   }
+   ```
+
+3. In your host startup, with the AddShinyMediator call, add the following:
+
+   ```csharp
+   services.AddShinyMediator(x => x..AddMemoryCaching(y =>
+   {
+        y.ExpirationScanFrequency = TimeSpan.FromSeconds(5);
+   }));
+   ```
+
+4. That's it!  Your handler will now cache for 60 seconds with a sliding expiration of 30 seconds.
+</Steps>
+
+### Setting Cache Config on the Context
+
+Sometimes, a very specific call from a very specific location may have a need to set the cache config from a call.  You can do
+this through the IMediatorContext headers
+
+```csharp
+IMediator mediator; // inject this
+var response = await mediator.Request(new MyRequest(), CancellationToken.None, ctx => ctx.SetCacheConfig(new CacheItemConfig
+{
+    AbsoluteExpiration = TimeSpan.FromSeconds(60),
+    SlidingExpiration = TimeSpan.FromSeconds(30)
+}));
+```
+
+### Forcing Cache Refresh
+
+You can add the ICacheControl to your contract to control cache directly at the point of call.
+
+ForceRefresh allows an easy way to bypass cache and SetEntry allows you to set cache entry properties.
+
+```csharp
+IMediator mediator; // inject this
+var response = await mediator.Request(new MyRequest(), CancellationToken.None, ctx => ctx.ForceCacheRefresh());
+response.Result // won't be from cache
+
+var cacheInfo = response.Context.Cache();
+cacheInfo.IsHit // will be false
+```
+
+### Configuration
+
+We recommend configuring cache through Microsoft.Extensions.Configuration.  Read [Configuration](./) for more information.
+
+```json
+{
+    "Mediator": {
+        "Cache": {
+            "My.Namespace.MyHandler": {
+                "Priority": "High",
+                "AbsoluteExpirationSeconds": 60,
+                "SlidingExpirationSeconds": 30
+            }
+        }
+    }
+}
+```
+
+:::danger
+Configuration does allow you to specify wildcard/globs `*` to specify all handlers in a namespace use Caching. 
+WE STRONGLY DISCOURAGE THIS.  This feature is something you want to be very explicit about.
+:::
+
+## Persistent Cache
+
+Persistent cache is built into our [MAUI](/mediator/extensions/maui) and [Uno Platform](/mediator/extensions/unoplatform) extensions.  It uses the file system to store cache data.  This allows cache to survive
+across application restarts.  It works identical to the memory cache, but you can specify a different cache provider.
+
+```csharp
+services.AddShinyMediator(x => 
+{
+    x.AddMauiPersistentCache();
+
+    // OR
+    x.AddUnoPersistentCache(); 
+});
+
+```
+
+It works identical to the memory cache, but stores to the filesystem instead.  This is great for combining with things like Shiny Background Jobs to keep your cache fresh.
+
+## Custom Cache Providers
+
+Custom caching is now easy to accomplish inside Shiny.Mediator.  Your cache provider can also make use of all the same benefits/configuration as already shown.
+
+
+<Steps>
+
+1. Implement your custom provider `Shiny.Mediator.Caching.ICacheProvider` located in the Shiny.Mediator package.
+   ```csharp 
+   public interface ICacheService
+   {
+        Task<CacheEntry<T>?> GetOrCreate<T>(
+            string key, 
+            Func<Task<T>> factory,
+            CacheItemConfig? config = null
+        );
+        
+        /// <summary>
+        /// Manually insert or overwrite an item in cache
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="config"></param>
+        Task<CacaheEntry<T>> Set<T>(
+            string key, 
+            T value, 
+            CacheItemConfig? config = null
+        );
+
+
+        /// <summary>
+        /// Retrieves a cached value, null if not found
+        /// </summary>
+        /// <param name="key"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        Task<CacheEntry<T>?> Get<T>(string key);
+
+        /// <summary>
+        /// Removes a specific cache item
+        /// </summary>
+        /// <param name="key"></param>
+        Task Remove(string key);
+        
+        /// <summary>
+        /// Clears cache keys starting with prefix
+        /// </summary>
+        /// <param name="prefix"></param>
+        Task RemoveByPrefix(string prefix);
+
+        /// <summary>
+        /// Clears all cache
+        /// </summary>
+        Task Clear();
+   }
+   ```
+
+2. Now register it with Shiny.Mediator
+    ```csharp
+    services.AddShinyMediator(x => x.AddCaching<MyCustomCacheService>());
+    ```
+
+    :::warning
+    You can only have 1 cache provider registered at a time for our middleware.  If you need something more custom, you'll need to create your own middleware to handle it.
+    :::
+
+</Steps>
+
+
+## Contexts & 'Did my data come from cache'?
+
+There is often times that you want to know IF your data came from cache, but also WHEN it was stored.  This is easy to accomplish using
+the `IMediatorContext` interface.  This interface is populated with tons of extra data during your mediator calls including offline data.
+
+There is an extension method called `IMediatorContext.Cache` - if this value is returned as null, the data is "fresh", otherwise, it contains info about
+when the data was stored.
+
+```csharp
+IMediator mediator;
+var response = mediator.Request(new MyRequest());
+
+response.Result // the actual data
+var cache = response.Context.Cache();
+
+if (!cache.IsHit) 
+{
+    // ... data is direct from source
+}
+else 
+{
+    // data is from offline store
+    cache.Timestamp // when the data was stored
+    cache.RequestKey // the key used to store the data
+}
+```

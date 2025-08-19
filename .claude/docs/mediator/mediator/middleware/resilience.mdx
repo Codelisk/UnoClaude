@@ -1,0 +1,86 @@
+---
+title: Resiliency
+---
+import { Steps } from '@astrojs/starlight/components';
+import NugetBadge from '/src/components/NugetBadge.tsx';
+
+:::note
+Resiliency middleware is applied to [Commands](/mediator/commands) and [Requests](/mediator/requests)
+:::
+
+<NugetBadge name="Shiny.Mediator.Resilience" label="Shiny.Mediator.Resilience" />
+
+Resiliency is a necessary thing to do discuss when it comes to mobile & network calls.  Cell signals can drop, wifi can be spotty, and servers can be down.  
+The `Resilience` middleware is designed to help you handle these situations.  Shiny Mediator provides easy middleware to the actual
+workhorse in this equation - Microsoft.Extension.Resilience.  This library provides a number of resiliency patterns such as Circuit Breakers, Retry Policies, and more.
+
+For more documentation on the `Microsoft.Extension.Resilience` library, please see the [official documentation](https://learn.microsoft.com/en-us/dotnet/core/resilience/)
+
+## Setup
+
+<Steps>
+1. Install the `Shiny.Mediator.Resilience` package from NuGet
+
+2. Add the resilience middleware to your mediator setup
+
+   ```csharp
+   services.AddShinyMediator(cfg =>
+   {
+       cfg.AddResiliencyMiddleware(
+            ("test", builder =>
+            {
+                builder.AddRetry(new RetryStrategyOptions());
+                builder.AddTimeout(TimeSpan.FromSeconds(2.0));
+            })
+        );
+   });
+   ```
+
+3. With any request handler that provides a result, you can now add the following attribute
+
+    ```csharp
+    public class MyRequestHandler : IRequestHandler<MyResponse, MyResponse>
+    {
+        [Resilient("test")]
+        public async Task<MyResponse> Handle(MyResponse request, MediatorContext context, CancellationToken cancelToken)
+        {
+            // do your work here
+            var result = await SomeNetworkCallThatTakesForever(cancelToken);
+            return result;
+        }
+    }
+    ```
+</Steps>
+
+That's it!  Your request handler is now resilient! 
+
+
+
+### Configuration
+
+We recommend configuring cache through Microsoft.Extensions.Configuration.  Read [Configuration](./) for more information.
+
+With the below configuration, you will also not need to configure resilience in your startup code.
+
+```json
+{
+    "Mediator": {
+        "Resilience": {
+            "My.Namespace.MyHandler": {
+                "TimeoutMilliseconds": 5000,
+                "Retry": {
+                    "MaxAttempts": 3,
+                    "UseJitter": true,
+                    "DelayMilliseconds": 3000,
+                    "BackoffType": "Constant"
+                }
+            }
+        }
+    }
+}
+```
+
+:::danger
+Configuration does allow you to specify wildcard/globs `*` to specify all handlers in a namespace use Caching. 
+WE STRONGLY DISCOURAGE THIS.  This feature is something you want to be very explicit about.
+:::

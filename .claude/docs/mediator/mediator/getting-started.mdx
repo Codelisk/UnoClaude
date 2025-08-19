@@ -1,0 +1,199 @@
+---
+title: Quick Start
+---
+import { Steps } from '@astrojs/starlight/components';
+import NugetBadge from '/src/components/NugetBadge.tsx';
+
+# MAUI
+
+<Steps>
+1. Install <NugetBadge name="Shiny.Mediator" showLabel={true} /> & <NugetBadge name="Shiny.Mediator.Maui" showLabel={true} /> 
+
+2. First, let's create our request & event handlers
+
+    ```csharp
+    using Shiny.Mediator;
+
+    public record TestCommand(string AnyArgs, int YouWant) : ICommand;
+    public record TestEvent(MyObject AnyArgs) : IEvent;
+
+    // and for request/response requests - we'll come back to this
+    public record TestResponseRequest : IRequest<TestResponse> {}
+    public record TestResponse {}
+    ```
+
+3. Next - let's wire up our handlers.  You can have ONLY 1 request handler per request type. This is where you would do the main business logic or data requests.
+
+    Let's create our Request & Command Handlers 
+
+    ```csharp
+    using Shiny.Mediator;
+
+    // NOTE: Request handlers are registered as singletons
+    public class TestCommandHandler : ICommandHandler<TestCommand> 
+    {
+        // you can do all dependency injection here
+        public async Task Handle(TestCommand command, IMediatorContext context, CancellationToken ct) 
+        {
+            // do something async here
+        }
+    }
+
+    public class TestResponseRequestHandler : IRequestHandler<TestResponseRequest, TestResponse>
+    {
+        public async Task<TestResponse> Handle(TestResponseRequest request, IMediatorContext context, CancellationToken ct)
+        {
+            var response = await GetResponseThing(ct);
+            return response;
+        }
+    }
+
+    public class TestEventHandler : IEventHandler<TestEvent> 
+    {
+        // Dependency injection works here
+        public async Task Handle(TestEvent @event, IMediatorContext context, CancellationToken ct)
+        {
+            // Do something async here
+        }
+    }
+    ```
+
+    :::note
+    A class can implement multiple request handlers, event handlers, or even middleware if necessary
+    :::
+
+4. Now, let's register all of our stuff with our .NET MAUI MauiProgram.cs
+
+    ```csharp
+    public static class MauiProgram
+    {
+        public static MauiApp CreateMauiApp()
+        {
+            var builder = MauiApp
+                .CreateBuilder()
+                .UseMauiApp<App>();
+            
+            builder.Services.AddShinyMediator(x => x.UseMaui());
+
+            // AddSingletonAsImplementedInterfaces/AddScopedAsImplementedInterfaces are extension methods we've added to IServiceCollection
+            // that allow you to register all interfaces that a class implements
+            builder.Services.AddSingletonAsImplementedInterfaces<TestEventHandler>();
+            builder.Services.AddSingletonAsImplementedInterfaces<TestCommandHandler>();
+            builder.Services.AddSingletonAsImplementedInterfaces<TestResponseRequestHandler>();
+
+            // OR 
+            // if you're using our attribute for source generation - simply add [RegisterHandler], [RegisterMiddleware] to your types
+            // NOTE: that for each assembly you have source generation enabled, you will need to call AddDiscoveredMediatorHandlersFrom{AssemblyName}
+            builder.Services.AddDiscoveredMediatorHandlersFromMaui_App();
+        }
+    }
+    ```
+
+6. And finally, let's use the mediator and call our new models - any model model/viewmodel/etc participating in dependency injection can now inject the mediator
+
+    ```csharp
+    public class MyViewModel(Shiny.Mediator.IMediator mediator)
+    {
+        public async Task Execute() 
+        {
+            await mediator.Send(new TestCommand()); // this will execute TestCommandHandler
+            var response = await mediator.Request(new TestResponseRequest()); // this will execute TestResponseRequestHandler and return a value
+            
+            // this will publish to any service registered that implement IEventHandler<TestEvent>
+            // there are additional args here to allow you to execute values in sequentially or wait for all events to complete
+            await mediator.Publish(new TestEvent()); 
+        }
+    }
+    ```
+
+</Steps>
+
+### What about my ViewModels?
+
+For .NET MAUI, your viewmodels have the ability to participate in the event publishing chain without being part of dependency injection
+
+With this setup, you don't need to worry about deallocating any events, unsubscribing from some service, or hooking to anything.
+
+Lastly, if your page/viewmodel is navigated away from (popped), it will no longer participate in the event broadcast
+
+<Steps>
+1. Install <NugetBadge name="Shiny.Mediator.Maui" showLabel={true} />
+2. Now...let's go back to our MauiProgram.cs and alter the AddShinyMediator
+
+    ```csharp
+    builder.Services.AddShinyMediator(cfg => cfg.UseMaui());
+    ```
+
+    :::note
+    Blazor & Blazor Hybrid would install <NugetBadge name="Shiny.Mediator.Blazor" showLabel={true} /> and call `cfg.UseBlazor()`
+    :::
+
+3. Now your viewmodel (or page) can simply implement the IEventHandler interface to participate
+
+    :::note
+    Further example to below - you can implement multiple event handlers
+    :::
+
+    ```csharp
+    public class MyViewModel : BaseViewModel, 
+                            Shiny.Mediator.IEventHandler<TestEvent1>,
+                            Shiny.Mediator.IEventHandler<TestEvent2>
+    {
+        public async Task Handle(TestEvent @event, IMediatorContext context, CancellationToken ct)
+        {
+        }
+        
+        public async Task Handle(TestEvent2 @event, IMediatorContext context, CancellationToken ct)
+        {
+        }
+    }
+    ```
+
+    :::caution
+    ViewModels or "collection events" should not be request handlers or middleware.
+    :::
+</Steps>
+
+## Blazor
+
+<Steps>
+
+1. Install <NugetBadge name="Shiny.Mediator" label="Shiny.Mediator" /> & <NugetBadge name="Shiny.Mediator.Blazor" label="Shiny.Mediator.Blazor" />
+2. Create your handlers just like MAUI above
+3. Setup Mediator with Blazor component event collection
+   ```csharp
+   builder.Services.AddShinyMediator(x => x.UseBlazor());
+   ```
+4. In your main index/app.razor, add the following underneath the Blazor script
+   ```html
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/Shiny.Mediator.Blazor/Mediator.js"></script>
+   ```
+
+</Steps>
+
+
+## Source Generated Registration
+
+When you install Shiny.Mediator, we include a source generator that will create a set of attributes that you can mark
+your handlers with.  This will generate the registration code for you.
+
+Those attributes are:
+<ul class="list-disc">
+    <li>SingletonHandlerAttribute</li>
+    <li>ScopedHandlerAttribute</li>
+</ul>
+
+From there, any of those marked classes will be added to a source generated extension that you can use for you IServiceCollection
+registration
+
+Example: MauiProgram.cs (ie. Project/Assembly with Shiny.Mediator installed named: Maui.App)
+```csharp
+builder.Services.AddDiscoveredMediatorHandlersFromMaui_App();
+```
+
+The convention we use is `AddDiscoveredMediatorHandlersFrom{AssemblyName}` - This prevents naming collisions during the registration process.
+
+:::warning
+All source generated registrations will register your implementations as singleton against ALL interfaces they implement.
+:::

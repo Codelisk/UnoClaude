@@ -1,0 +1,176 @@
+---
+title: Advanced
+---
+import { Icon } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import diagramImg from  '/src/assets/mediator_layout.png';
+
+
+## Mature Dependency Injection Containers
+
+Mediator allows for a lot of complex generic registration and resolution via covariance.  Below is a list of our current & known support.  We do not intend to 
+test any other containers at this time.
+
+|Container|Information|
+|---|---|
+|Microsoft.Extensions.DependencyInjection|Can get many of the simple cases that are required by our HTTP & Prism modules, but will break down for more complex scenarios like our Dapper extension|
+|DryIoc|Fully Supported|
+|Autofac|Fully Supported|
+
+
+## Event Collectors
+
+### What are they?
+Event collectors allow you to bring in event handlers that may not be participating in the dependency injection lifecycle or perhaps they simply have a different scope outside of where you are IN the DI lifecycle.
+
+Traditionally, in classic Xamarin Forms and even some .NET MAUI apps tend not to register their viewmodels or pages with the DI lifecycle, however, all of these apps participate in the navigation stack.  Thus, we have an 
+event collector for MAUI that simply traverses to find any pages or viewmodels that implement the IEventHandler at the time of the event publish.  What this means is that if you pop a page/viewmodel off the stack
+before the publish is called, it will no longer participate in the event collector.
+
+:::note
+It is possible to have the event collector return an item that is both DI aware AND event collector aware.  We do instance comparison under the hood to ensure we only register a particular handler once
+:::
+
+
+### Creating an Event Collector
+
+```csharp
+public class MyEventCollector : IEventCollector
+{
+    public IReadOnlyList<IEventHandler<TEvent>> GetHandlers<TEvent>() where TEvent : IEvent
+    {
+        // return any handlers in your required scope
+    }
+}
+```
+
+### Registering Event Collectors
+
+```csharp
+builder.Services.AddShinyMediator(cfg => 
+{
+    cfg.AddEventCollector<MyEventCollector>();
+});
+```
+
+:::caution
+Event Collectors are registered as singletons in the DI container
+:::
+
+### MAUI & Blazor Event Collectors
+
+We offer two event collectors out of the box for MAUI (Shiny.Mediator.Maui) & Blazor (Shiny.Mediator.Blazor).  
+
+Our MAUI event collector will traverse the navigation stack to find any pages or viewmodels that implement the IEventHandler interface.  This is a great way to participate in the event chain without having to worry about DI.
+
+Our Blazor event collector has a component factory that holds a weak reference to any component created that implements the IEventHandler interface.
+
+    
+## Project Structure
+
+Project structure is an important to helping with large applications.  This is where 'vertical slicing' and cross team implementation really gets good!
+
+:::note
+This layout template has a fully developed sample located [HERE](https://github.com/shinyorg/mediatorsample/)
+:::
+
+### Reasons for this Engineering
+<Icon name="right-caret" /> Allows cross functional teams to work enable cross functional requirements without being tightly coupled
+<Icon name="right-caret" /> Allows each feature/module to register its own services, controls, pages, viewmodels, etc in isolation while still having access to shared functionality like logging, configuration, etc
+<Icon name="right-caret" /> Through use of Shiny.Mediator.Prism, we can achieve strongly typed routing and navigation parameters via a simple Mediator request that implements the IPrismNavigationRequest
+
+### Module Layout Template
+
+<Image src={diagramImg} alt="diagram" />
+{/* ```mermaid
+graph LR
+    TheApp <--- Shared
+    Shared --> PeopleModule
+    Shared --> VehicleModule
+    Shared --> OwnerModule
+    OwnerModule.Contracts --> OwnerModule
+    VehicleModule.Contracts --> VehicleModule
+    PeopleModule.Contracts --> PeopleModule
+    OwnerModule.Contracts --> Shared
+    VehicleModule.Contracts --> Shared
+    PeopleModule.Contracts --> Shared
+    OwnerModule --> TheApp
+    VehicleModule --> TheApp
+    PeopleModule --> TheApp
+``` */}
+
+|Project|Description|
+|---|---|
+|TheApp|This is the main MAUI executable project|
+|Shared|This is where any shared services, utils, etc go to share amongst ALL modules|
+|PeopleModule|Where all the handlers, views, viewmodels, and services specific to people live|
+|PeopleModule.Contracts|Contracts that the PeopleModule owns and manages|
+|VehicleModule|Where all the handlers, views, viewmodels, and services specific to vehicles live|
+|VehicleModule.Contracts|Contracts that the VehicleModule owns and manages|
+|OwnerModule|Where all the handlers, views, viewmodels, and services specific to owners live|
+|OwnerModule.Contracts|Contracts that the OwnerModule owns and manages|
+
+To see this runnable sample code, please go to [https://github.com/shinyorg/mediatorsample/]
+
+## Advanced Dependency Injection
+
+Dependency Injection is pluggable as we use the Microsoft.Extension.DependencyInjection setup to provide our servicing.
+That being said, your mileage will vary depending on what your container will support.  We test our apps with 
+* DryIoc
+* Microsoft Dependency Injection
+
+If you use DI containers outside of this, you will need to do your own test cases!
+
+One of the big value adds for middleware & events is that they support covariance.
+
+```csharp
+public record ChildEvent : IEvent;
+public record ParentEvent : ChildEvent;
+public record GrandParentEvent : ParentEvent;
+
+
+public class AllFamilyEventHandler : IEventHandler<GrandParentEvent> 
+{
+    public async Task Handle(GrandParentEvent @event, IMediatorContext context, CancellationToken cancellationToken) 
+    {
+        // this can actually be 
+    }
+}
+
+
+var services = new ServiceCollection();
+services.AddSingleton(typeof(IEventHandler<>), typeof(AllFamilyEventHandler));
+
+```
+
+
+## Additional Registration Methods (Out of the Box)
+
+We have several methods to help deliver easier registration experiences
+
+You may have an event handler or request handler that handles multiple commands, but you want this "service" to hold state.
+Thus, we offer some simple methods to hold that state in scope of a request or publish.
+
+```csharp
+using Shiny.Mediator;
+using Microsoft.Extensions.DependencyInjection;
+
+
+public class YourImplementation : IEventHandler<SomeEvent>, IEventHandler<SomeOtherEvent> {
+    // .. left empty for brevity
+}
+
+var services = new ServiceCollection();
+
+services.AddSingletonAsImplementedInterfaces<YourImplementation>();
+services.AddScopedAsImplementedInterfaces<YourImplementation>();
+services.AddShinyMediator();
+
+var services.BuildServiceProvider();
+
+var e1 = sp.GetRequiredService<IEventHandler<SomeEvent>>();
+var e2 = sp.GetRequiredService<IEventHandler<SomeOtherEvent>>();
+
+e1 == e2 // same instance
+
+```

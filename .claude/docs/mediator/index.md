@@ -1,0 +1,129 @@
+---
+title: Introduction
+---
+import NugetBadge from '/src/components/NugetBadge.tsx';
+import MediatorNapkin from '/src/components/MediatorNapkin.astro';
+
+
+# What Is It?
+
+Mediator is a behavioral design pattern that lets you reduce chaotic dependencies between objects. The pattern restricts direct communications between the objects and forces them to collaborate only via a mediator object.
+
+Shiny Mediator <NugetBadge name="Shiny.Mediator" /> is a mediator pattern implementation, but for built with ALL .NET apps in mind.  We provide a TON of middleware out-of-box to get you up and rolling with
+hardly any effort whatsoever.  Checkout our [Getting Started](/mediator/getting-started) guide to see how easy it is.  Imagine using 1 line of code to add offline, caching, or validation to your code!
+
+This project is heavily inspired by [MediatR](https://github.com/jbogard/mediatr) with some lesser features that we feel
+were aimed more at server scenarios, while also adding some features we feel benefit apps
+
+Please checkout the following samples
+- [Mediator End-to-End Architectural Sample](https://github.com/shinyorg/mediatorsample)
+- [Cool Sample App](https://github.com/shinyorg/wonderland)
+- [Test Sample](https://github.com/shinyorg/mediator/tree/main/samples)
+
+## Contracts/Messages
+
+Shiny.Mediator offers 4 types of contracts/messages that passthrough mediator
+
+|Contract|Description|Handler Type|Middleware Type|
+|--------|-----------|------------|---------------|
+|[Commands](/mediator/commands) (`ICommand`)|Commands are messages that are sent to a single handler.  They have no result/response|`ICommandHandler<TRequest, TResult>`|`ICommandMiddleware<TRequest, TResult>`|
+|[Requests](/mediator/requests) (`IRequest<Result>`)|Requests are messages that are sent to a single handler.  They have a result/response|`IRequestHandler<TRequest, TResult>`|`IRequestMiddleware<TRequest, TResult>`|
+|[Streams](/mediator/streams) (`IStreamRequest<TResult>`)|Streams are message that are sent to a single handler.  The response is however, an async enumerable|`IStreamRequestHandler<TRequest, TResult>`|`IStreamRequestMiddleware<TRequest, TResult>`|
+|[Events](/mediator/events) (`IEvent`)|Events are messages that are sent to multiple handlers.  They have no result/response|`IEventHandler<TEvent>`|`IEventMiddleware<TEvent>`|
+
+
+<MediatorNapkin />
+
+## What Does It Solve
+
+### Problem #1 - Service & Reference Hell
+
+Does this look familiar to you?  Look at all of those injections!  As your app grows, the list will only grow.  I feel sorry for the dude that gets to unit test this bad boy.
+
+```csharp
+public class MyViewModel(
+    IConnectivity conn,
+    IDataService data,
+    IAuthService auth,
+    IDialogsService dialogs,
+    ILogger<MyViewModel> logger
+) {
+    // ...
+    try {
+        if (conn.IsConnected) 
+        {
+            var myData = await data.GetDataRequest();
+        }
+        else 
+        {
+            dialogs.Show("No Connection");
+            // cache?
+        }
+    }
+    catch (Exception ex) {
+        dialogs.Show(ex.Message);
+        logger.LogError(ex);
+    }
+}
+```
+
+With a bit of our middleware and some events, you can get here:
+
+```csharp
+public class MyViewModel(IMediator mediator) : IEventHandler<ConnectivityChangedEvent>, IEventHandler<AuthChangedEvent> {
+    // ...
+    var myData = await mediator.Request(new GetDataRequest());
+
+    // logging, exception handling, offline caching can all be bundle into one nice clean call without the need for coupling
+}
+
+public class GetDataRequestHandler : IRequestHandler<GetDataRequest, MyData> {
+
+    [OfflineAvailable] // <= boom done
+    public async Task<MyData> Handle(GetDataRequest request, IMediatorContext context, CancellationToken cancellationToken) {
+        // ...
+    }
+}
+```
+
+### Problem #2 - Messages EVERYWHERE (+ Leaks)
+
+Do you use the MessagingCenter in Xamarin.Forms?  It's a great tool, but it can lead to some memory leaks if you're not careful.  It also doesn't have
+a pipeline, so any errors in any of the responders will crash the entire chain.  It doesn't have a request/response style setup (not that it was meant for it), but 
+this means you still require other services.
+
+```csharp
+public class MyViewModel
+{
+    public MyViewModel()
+    {
+        MessagingCenter.Subscribe<SomeEvent1>(this, @event => {
+            // do something
+        });
+        MessagingCenter.Subscribe<SomeEvent2>(this, @event => {
+            // do something
+        });
+
+        MessagingCenter.Send(new SomeEvent1());
+        MessagingCenter.Send(new SomeEvent2());
+
+        // and don't forget to unsubscribe
+        MessagingCenter.Unsubscribe<SomeEvent1>(this);
+        MessagingCenter.Unsubscribe<SomeEvent2>(this);
+    }
+}
+```
+
+Let's take a look at our mediator in action for this scenarios
+
+```csharp
+public class MyViewModel : IEventHandler<SomeEvent1>, IEventHandler<SomeEvent2>
+{
+    public MyViewModel(IMediator mediator)
+    {
+        // no need to unsubscribe
+        mediator.Publish(new SomeEvent1());
+        mediator.Publish(new SomeEvent2());
+    }
+}
+```

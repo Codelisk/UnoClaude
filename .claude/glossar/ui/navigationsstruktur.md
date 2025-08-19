@@ -1,0 +1,1 @@
+Navigationsstruktur beschreibt wie innerhalb der App navigiert wird also von welcher Page man zu welchen Pages navigieren kann.

@@ -1,0 +1,49 @@
+---
+title: Request Keys
+---
+Request keys can in most ways be called a 'Cache key'.  Let's say you want to cache an HTTP request, but that request has filters and varying types of parameters.
+Obviously, you want to have different caches for these varying parameters.  Request keys gives you the ability to take control of HOW these keys are built right from your
+contract calls.
+
+Request keys are currently used by the following middleware:
+- [Caching](/mediator/middleware/caching)
+- [Offline](/mediator/middleware/offline)
+- [Stream Replays](/mediator/middleware/replay)
+
+:::note
+The IRequestKey interface is found in the Shiny.Mediator.Contracts nuget which is referenced by ALL Shiny.Mediator
+:::
+
+Let's take a look at a sample request contract.
+
+```csharp
+
+public record MyRequest(string Id, string Category) : IRequest<MyResult>, IRequestKey
+{
+    // WARNING: we do not alter your key in anyway, so be sure to make it unique by adding things like the type
+    public string GetRequestKey() => $"MyRequest-{Id}-{Category}";
+}
+public record MyResult;
+```
+
+:::danger
+Careful when you create a key based on dates or other dynamic values - you may end up with a lot of entries with a ton of misses.
+:::
+
+### Contract Key Provider
+Starting with Shiny Mediator 4.9, we introduced the `IContractKeyProvider` interface. This allows you to provide a custom way of generating request keys without having to implement `IRequestKey` on every contract.
+
+You can implement this interface to pull values from configuration, source generation, or any other method you prefer. The default implementation uses reflection to maintain backwards compatibility, but you can create your own provider for more advanced scenarios.
+
+```csharp
+public class CustomContractKeyProvider : IContractKeyProvider
+{
+    public string GetContractKey(object key)
+    {
+        return "Custom Key"; // careful to make sure this doesn't conflict here
+    }
+}
+
+:::danger
+Our `DefaultContractKeyProvider` uses reflection (currently) to build out a key if IRequestKey is not implemented.  It does do a good job ensuring the key built is unique for the contract.  You key provider will need to also ensure appropriate uniqueness
+:::

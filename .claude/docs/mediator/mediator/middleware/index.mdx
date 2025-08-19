@@ -1,0 +1,110 @@
+---
+title: Middleware
+---
+import { Image } from 'astro:assets';
+import diagramImg from  '/src/assets/middleware.png';
+
+
+<Image src={diagramImg} alt="diagram" />
+
+Middleware is the concept that refers to a layer of code that lies between your handler and the caller using the `IMediator`. It provides you with a 
+`before` and `after` hook to do things like logging, caching, error handling, etc.  You can mutate the results or short circuit it if necessary.
+
+Our middleware follows the same general principles from ASP.NET Core.  Shiny Mediator supports middleware for both requests and events, however, they 
+are two separate pipelines.
+
+As with ASP.NET Core, when you're implementing middleware, you have a `next` parameter that you must call to continue the pipeline.
+
+:::note
+The ability to skip middleware in any call is easy.  Just add the following header to any Send/Request/Publish call
+
+```csharp
+IMediator medidator; //injected
+mediator.Send(new MyRequest(), CancellationToken.None, Headers.BypassMiddleware);
+```
+:::
+
+## Configuration
+
+Most of our extensions and middleware are configured through the Microsoft.Extensions.Configuration abstractions.  For MAUI and Blazor configuration, we recommend
+using the `Microsoft.Extensions.Configuration.Json` package to load your configuration from an embedded resource. 
+
+Here is an example of how you can load a configuration file from an embedded resource:
+
+```csharp
+builder.Configuration.AddJsonStream(Assembly.GetExecutingAssembly().GetManifestResourceStream("Sample.appsettings.json")!);
+``
+
+Below is an example of essentially every configuration option we have available.  This is a JSON representation of the configuration that you would load into your application.
+
+```json
+{
+    "Mediator": {
+        "Http": {
+            "My.Namespace.Contract": "https://otherlocalhost",
+            "My.Namespace.*" : "https://localhost"
+        },
+        "PerformanceLogging": {
+            "*": {
+                "ErrorThresholdMilliseconds": 5000
+            }
+        },
+        "Offline": {
+            "Sample.Handlers.OfflineRequestHandler": {
+                "AvailableAcrossSessions": true
+            }
+        },
+        "ReplayStream": {
+            "*": {
+                "AvailableAcrossSessions": true
+            }
+        },
+        "TimerRefresh": {
+            "My.Contracts.MainRequest": {
+                "IntervalSeconds": 30
+            }
+        },
+        "Resilience": {
+            "My.Contracts.LongRequest": {
+                "RetryCount": 3,
+                "RetryDelay": 2000,
+                "CircuitBreakerCount": 5,
+                "CircuitBreakerDelay": 5000
+            }
+        },
+        "Cache": {
+            "My.Contracts.LongRequest": {
+                "Priority": "High",
+                "AbsoluteExpirationSeconds": 300,
+                "SlidingExpirationSeconds": 60
+            }
+        },
+        "UserErrorNotifications": {
+            "My.Contracts.*": {
+                "*": {
+                    "Title": "ERROR",
+                    "Message" : "Failed to do something"
+                }
+            }
+        }
+    }
+}
+```
+
+Above is an example of all configurations we currently supported.  The configuration allows you to configure a specific contract/handler, namespace, or the entire mediator 
+library to configure the middleware around it.
+
+Here is the order we follow for setting up and grabbing a config for a call:
+
+1. Contract Full Type Name (namespace + type)
+2. Handler Full Type Name (namespace + type)
+3. Contract Namespace (defined with namespace.*)
+4. Handler Namespace (defined with namespace.*)
+5. Everything
+
+If no configuration is found, the middleware & extensions will move on to any attributes they may support.  If nothing is found there, the feature is considered
+to be disabled for that contract.
+
+:::danger
+Configuring * on any middleware outside HTTP & Performance Logging can be dangerous.  Wildcards apply to all contracts in the scope you give it.
+:::

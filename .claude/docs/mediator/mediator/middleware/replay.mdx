@@ -1,0 +1,76 @@
+---
+title: Replay
+---
+import { Steps } from '@astrojs/starlight/components';
+import NugetBadge from '/src/components/NugetBadge.tsx';
+
+:::note
+Refresh timer middleware is applied only to [Streams](/mediator/streams)
+:::
+
+There are occasions where you need to make a large or long duration network call, what if you could return the previous results 
+while the current network call is in progress?  What if you don't have a network connection and the method should just "wait" until it does?
+The `Replay` middleware is designed to help you with this.
+
+Replay is designed to work with cache and/or offline availability services if they are registered with your container.
+
+:::note
+Replay can also handle offline scenarios and will "wait" until the network is available
+:::
+
+## Setup
+
+So here we have a standard HTTP call on our streaming async enumerable protocol.  Nothing special here, but once we turn on the `Replay` middleware, we can return the previous results while the current network call is in progress.
+
+```csharp
+public class MyRequest : IStreamRequest<string>;
+
+public class MyStreamRequestHandler : IStreamRequestHandler<MyRequest, SomeResponse>
+{
+    public async IAsyncEnumerable<string> Handle(MyRequest request, IMediatorContext context, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        ... some long http call
+    }
+} 
+```
+
+### In Your Code
+
+At first, you'll see there is nothing special, but the cool part here is that the async enumerable will "pump" twice.  The first time for the previous results
+(if the call has previous been made) and the second time with the new response from your long call.
+
+```csharp
+var stream = mediator.Request(new MyRequest());
+await foreach (var item in stream)
+{
+    MyBinding = item; // will passthrough here twice
+} 
+```
+
+
+## Configuration
+
+Much like other middleware, you can use the Microsoft.Extensions.Configuration.  
+
+```json
+{
+    "Mediator": {
+        "ReplayStream": {
+            "MyNamespace.MyStreamHandler": true
+        }
+    }
+}
+```
+
+:::danger
+Configuration does allow you to specify wildcard/globs `*` to specify all handlers in a namespace use ReplayStream. 
+WE STRONGLY DISCOURAGE THIS.  This feature is something you want to be very explicit about.
+:::
+
+:::note
+This middleware is installed by default with `Shiny.Mediator.Maui` or `Shiny.Mediator.Blazor`
+:::
+
+## Contexts & 'Did my data come from cache'?
+
+TODO
