@@ -1,33 +1,19 @@
-Analysiere das GitHub-Ticket und erstelle eine strukturierte Analyse in ./Ticketprotokoll/grobanalyse.json
+Nutze den Ticket Analyzer Agent um das GitHub-Ticket zu analysieren.
 
-Führe folgende Schritte aus:
-
-1. Lese das GitHub-Ticket (URL oder Issue-Nummer wird vom User bereitgestellt)
-2. Analysiere folgende Punkte:
-   - Müssen für das Ticket Entities verändert oder hinzugefügt werden?
-   - Braucht man für das Ticket neue Api Endpunkte?
-   - Braucht man UI Anpassungen für das Ticket?
-   - Braucht man UI-Logik Anpassungen für das Ticket?
-   - Gibt es im Ticket Teile für die man neue Nuget Packete/Third Libraries benötigt?
-
-3. Erstelle die Datei ./Ticketprotokoll/grobanalyse.json mit folgendem Schema:
-```json
-{
-  "ticketId": "string",
-  "ticketTitle": "string",
-  "analysisDate": "ISO-8601 date",
-  "entitiesChanged": boolean,
-  "entitiesDetails": "string (optional)",
-  "newApiEndpoints": boolean,
-  "apiEndpointsDetails": "string (optional)",
-  "uiChanges": boolean,
-  "uiChangesDetails": "string (optional)",
-  "uiLogicChanges": boolean,
-  "uiLogicDetails": "string (optional)",
-  "newLibraries": boolean,
-  "librariesDetails": "array of strings (optional)"
-}
+## Agent-Aufruf:
+```
+Task(
+  description="Ticket-Analyse durchführen",
+  prompt="/ticket-analyzer [TICKET_URL oder ISSUE_NUMMER]",
+  subagent_type="general-purpose"
+)
 ```
 
-4. Stelle sicher, dass das Verzeichnis ./Ticketprotokoll existiert
-5. Gib eine Zusammenfassung der Analyse aus
+Der Agent wird:
+1. Das GitHub-Ticket lesen
+2. Die Analyse gemäß der definierten Punkte durchführen
+3. Die Datei ./Ticketprotokoll/grobanalyse.json erstellen
+4. Eine Zusammenfassung der Analyse liefern
+
+## Agent-Datei:
+Der Agent nutzt die Definitionen aus: .claude/agents/ticket-analyzer.md

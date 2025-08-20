@@ -1,27 +1,24 @@
-Verarbeite die Ergebnisse der Ticket-Analyse basierend auf ./Ticketprotokoll/grobanalyse.json
+Nutze den Ticket Processor Agent um die Analyse-Ergebnisse zu verarbeiten.
 
-Führe folgende Schritte aus:
+## Agent-Aufruf:
+```
+Task(
+  description="Ticket-Ergebnisse verarbeiten",
+  prompt="/ticket-processor",
+  subagent_type="general-purpose"
+)
+```
 
-1. Lade die Datei ./Ticketprotokoll/grobanalyse.json
-2. Prüfe die Analyse-Ergebnisse und führe die entsprechenden Templates aus:
+Der Agent wird:
+1. Die Datei ./Ticketprotokoll/grobanalyse.json laden
+2. Basierend auf den boolean-Werten die entsprechenden Sub-Agents aufrufen:
+   - entities-analyzer für entitiesChanged=true
+   - api-analyzer für newApiEndpoints=true
+   - ui-design-analyzer für uiChanges=true
+   - ui-logic-analyzer für uiLogicChanges=true
+3. Bei newLibraries=true die Datei ./Ticketprotokoll/thirdparty.txt erstellen
+4. Alle durchgeführten Aktionen dokumentieren
 
-   - Wenn `entitiesChanged` = true:
-     → Führe /entities-analysis aus
-   
-   - Wenn `newApiEndpoints` = true:
-     → Führe /api-analysis aus
-   
-   - Wenn `uiChanges` = true:
-     → Führe /ui-design-analysis aus
-   
-   - Wenn `uiLogicChanges` = true:
-     → Führe /ui-logic-analysis aus
-   
-   - Wenn `newLibraries` = true:
-     → Erstelle oder überschreibe ./Ticketprotokoll/thirdparty.txt mit:
-       - Liste der benötigten Libraries
-       - Funktionen/Features, für die sie benötigt werden
-       - Empfohlene Packages
-
-3. Erstelle eine Zusammenfassung aller durchgeführten Aktionen
-4. Speichere den Status in ./Ticketprotokoll/processing-log.json
+## Agent-Dateien:
+- Haupt-Agent: .claude/agents/ticket-processor.md
+- Sub-Agents: .claude/agents/[entities|api|ui-design|ui-logic]-analyzer.md
