@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ticket Grobanalyse Schema",
+  "type": "object",
+  "required": [
+    "ticketId",
+    "ticketTitle",
+    "analysisDate",
+    "entitiesChanged",
+    "newApiEndpoints",
+    "uiChanges",
+    "uiLogicChanges",
+    "newLibraries"
+  ],
+  "properties": {
+    "ticketId": {
+      "type": "string",
+      "description": "GitHub Issue ID oder Nummer"
+    },
+    "ticketTitle": {
+      "type": "string",
+      "description": "Titel des GitHub Tickets"
+    },
+    "analysisDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 Datum der Analyse"
+    },
+    "entitiesChanged": {
+      "type": "boolean",
+      "description": "Müssen Entities verändert oder hinzugefügt werden?"
+    },
+    "entitiesDetails": {
+      "type": "string",
+      "description": "Details zu Entity-Änderungen"
+    },
+    "newApiEndpoints": {
+      "type": "boolean",
+      "description": "Werden neue API Endpunkte benötigt?"
+    },
+    "apiEndpointsDetails": {
+      "type": "string",
+      "description": "Details zu neuen API Endpunkten"
+    },
+    "uiChanges": {
+      "type": "boolean",
+      "description": "Sind UI Anpassungen nötig?"
+    },
+    "uiChangesDetails": {
+      "type": "string",
+      "description": "Details zu UI Änderungen"
+    },
+    "uiLogicChanges": {
+      "type": "boolean",
+      "description": "Sind UI-Logik Anpassungen nötig?"
+    },
+    "uiLogicDetails": {
+      "type": "string",
+      "description": "Details zu UI-Logik Änderungen"
+    },
+    "newLibraries": {
+      "type": "boolean",
+      "description": "Werden neue Libraries/Packages benötigt?"
+    },
+    "librariesDetails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Liste der benötigten Libraries"
+    }
+  }
+}
