@@ -1,0 +1,53 @@
+{
+  "name": "GitHub Ticket Analysis Workflow",
+  "version": "1.0.0",
+  "description": "Strukturierte Analyse von GitHub Tickets mit automatischer Verarbeitung",
+  "paths": {
+    "analysisOutput": "./Ticketprotokoll/grobanalyse.json",
+    "processingLog": "./Ticketprotokoll/processing-log.json",
+    "thirdPartyLibs": "./Ticketprotokoll/thirdparty.txt"
+  },
+  "commands": {
+    "analyze": "/analyze-ticket",
+    "process": "/process-ticket-results"
+  },
+  "conditionalActions": {
+    "entitiesChanged": {
+      "command": "/entities-analysis",
+      "outputs": [
+        "./Ticketprotokoll/entities-changes.md",
+        "./Ticketprotokoll/entities-migration-plan.json"
+      ]
+    },
+    "newApiEndpoints": {
+      "command": "/api-analysis",
+      "outputs": [
+        "./Ticketprotokoll/api-specification.yaml",
+        "./Ticketprotokoll/api-implementation-guide.md"
+      ]
+    },
+    "uiChanges": {
+      "command": "/ui-design-analysis",
+      "outputs": [
+        "./Ticketprotokoll/ui-components-spec.json",
+        "./Ticketprotokoll/ui-mockups.md"
+      ]
+    },
+    "uiLogicChanges": {
+      "command": "/ui-logic-analysis",
+      "outputs": [
+        "./Ticketprotokoll/ui-logic-flow.md",
+        "./Ticketprotokoll/ui-logic-tests.json"
+      ]
+    }
+  },
+  "outputFormats": {
+    "json": {
+      "indent": 2,
+      "ensureAscii": false
+    },
+    "markdown": {
+      "flavor": "gfm"
+    }
+  }
+}
